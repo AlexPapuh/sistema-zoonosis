@@ -4,8 +4,23 @@ import campanaService from '../../services/campana.service.js';
 import propietarioService from '../../services/propietario.service.js';
 import animalService from '../../services/animal.service.js';
 import { useAuth } from '../../context/AuthContext.jsx'; 
-import { Syringe, User, Dog, Save, ArrowLeft, Search, CheckCircle, UserPlus, RefreshCcw, Lock, AlertOctagon } from 'lucide-react';
+import { Syringe, User, Dog, Save, ArrowLeft, Search, CheckCircle, UserPlus, RefreshCcw, Lock, AlertOctagon, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const razasPerro = ["Mestizo", "Labrador", "Pastor Alemán", "Husky", "Golden Retriever", "Chihuahua", "Bulldog", "Poodle", "Otro"];
 const razasGato = ["Mestizo", "Persa", "Siamés", "Angora", "Maine Coon", "Sphynx", "Otro"];
@@ -23,6 +38,27 @@ const calcularEdad = (fechaNac) => {
     if (edadAnios > 0) return `${edadAnios} años`;
     if (edadMeses > 0) return `${edadMeses} meses`;
     return "Menos de 1 mes";
+};
+
+const MapFix = () => {
+    const map = useMap();
+    useEffect(() => {
+        map.invalidateSize();
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
+
+const LocationMarker = ({ position, setPosition }) => {
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+    return position ? <Marker position={position} /> : null;
 };
 
 const EjecucionCampanaPage = () => {
@@ -100,6 +136,8 @@ const EjecucionCampanaPage = () => {
                   nombrePropietario: datos.nombre || '',
                   telefonoPropietario: datos.telefono || '',
                   direccionPropietario: datos.direccion || '',
+                  latitudPropietario: datos.latitud || '',
+                  longitudPropietario: datos.longitud || '',
                   emailPropietario: '' 
               }));
               
@@ -121,8 +159,6 @@ const EjecucionCampanaPage = () => {
                   });
               }
           }
-
-  
           window.history.replaceState({}, document.title);
       }
   }, [location, loading, todosPropietarios]);
@@ -137,7 +173,8 @@ const EjecucionCampanaPage = () => {
           setPacienteSeleccionadoId('nuevo');
           setForm(prev => ({
               ...prev, 
-              nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: ''
+              nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '',
+              latitudPropietario: '', longitudPropietario: ''
           }));
       } catch (error) { console.error(error); }
   };
@@ -148,7 +185,8 @@ const EjecucionCampanaPage = () => {
       setPacienteSeleccionadoId('nuevo');
       setForm({ 
           ...form,
-          nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '' 
+          nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '',
+          latitudPropietario: '', longitudPropietario: ''
       });
   };
 
@@ -229,8 +267,8 @@ const handleRegistrarAtencion = async (e) => {
               text: '¿Deseas registrar otra mascota para este mismo domicilio?',
               icon: 'success',
               showCancelButton: true,
-              confirmButtonColor: '#3B82F6', // Azul
-              cancelButtonColor: '#6B7280', // Gris
+              confirmButtonColor: '#3B82F6',
+              cancelButtonColor: '#6B7280',
               confirmButtonText: 'Sí, otra mascota',
               cancelButtonText: 'No, finalizar visita'
           });
@@ -248,8 +286,8 @@ const handleRegistrarAtencion = async (e) => {
                   const mascotasActualizadas = await animalService.getAnimalsByPropietarioId(respuesta.propietario_id);
                   setMascotasDelPropietario(mascotasActualizadas);
               } else if (propietarioSeleccionado) {
-                   const mascotasActualizadas = await animalService.getAnimalsByPropietarioId(propietarioSeleccionado.id);
-                   setMascotasDelPropietario(mascotasActualizadas);
+                    const mascotasActualizadas = await animalService.getAnimalsByPropietarioId(propietarioSeleccionado.id);
+                    setMascotasDelPropietario(mascotasActualizadas);
               }
 
               setPacienteSeleccionadoId('nuevo');
@@ -342,7 +380,24 @@ const handleRegistrarAtencion = async (e) => {
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label><input type="text" name="telefonoPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.telefonoPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="emailPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.emailPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                 </div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label><input type="text" name="direccionPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.direccionPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                                    <input type="text" name="direccionPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.direccionPropietario} onChange={handleInputChange} disabled={!hayStock} />
+                                </div>
+                                
+                                <div className="mt-2 h-48 w-full rounded-lg overflow-hidden border border-gray-300 relative z-0">
+                                    <MapContainer center={[-19.5894, -65.7541]} zoom={15} style={{ height: "100%", width: "100%" }}>
+                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
+                                        <MapFix />
+                                        <LocationMarker
+                                            position={form.latitudPropietario ? { lat: form.latitudPropietario, lng: form.longitudPropietario } : null}
+                                            setPosition={(pos) => setForm(prev => ({ ...prev, latitudPropietario: pos.lat, longitudPropietario: pos.lng }))}
+                                        />
+                                    </MapContainer>
+                                    <div className="absolute bottom-1 left-1 bg-white/80 px-2 py-1 text-xs rounded z-[400] text-gray-600 flex items-center shadow-sm">
+                                         <MapPin size={12} className="mr-1"/> Click para marcar casa
+                                    </div>
+                                </div>
                             </>
                         )}
                     </div>
