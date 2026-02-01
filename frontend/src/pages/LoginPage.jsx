@@ -31,7 +31,16 @@ const LoginPage = () => {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err.message || 'Error al iniciar sesión');
+      console.error("Error de login:", err);
+      
+      if (err.response && err.response.status === 401) {
+          setError('La contraseña o el correo son incorrectos. Inténtalo de nuevo.');
+      } else if (err.response && err.response.data && err.response.data.message) {
+          setError(err.response.data.message);
+      } else {
+          setError('No se pudo conectar con el servidor. Revisa tu internet.');
+      }
+      
       setLoading(false);
     }
   };
@@ -64,7 +73,6 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    
     if (newPassword !== confirmPassword) {
         setError('Las contraseñas no coinciden. Por favor verifícalas.');
         return;
@@ -74,7 +82,6 @@ const LoginPage = () => {
         return;
     }
     
-
     setLoading(true);
     try {
       await authService.resetPassword(email, code, newPassword);
@@ -84,7 +91,6 @@ const LoginPage = () => {
         text: 'Ya puedes iniciar sesión con tu nueva contraseña',
         confirmButtonColor: '#2563eb'
       });
-      
       
       setView('login');
       setPassword('');
@@ -211,10 +217,10 @@ const LoginPage = () => {
 
         {view === 'forgot' && (
           <form onSubmit={handleRequestCode} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-             <p className="text-sm text-gray-600 text-center px-4">
+              <p className="text-sm text-gray-600 text-center px-4">
                Ingresa tu correo electrónico y te enviaremos un código de verificación.
-             </p>
-             <div>
+              </p>
+              <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Correo Electrónico
               </label>

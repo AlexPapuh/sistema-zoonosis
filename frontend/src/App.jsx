@@ -51,20 +51,6 @@ const RutaProtegida = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
-const HomePorRol = () => {
-  const { user } = useAuth();
-
-  if (!user) return <div>Cargando...</div>;
-
-  if (user.rol === 'Admin') return <ReportesPage />;
-
-  if (user.rol === 'Propietario') return <MisMascotasPage />;
-
-  if (user.rol === 'Veterinario') return <GestionCitasPage />;
-
-  return <DashboardPage />;
-};
-
 function App() {
   const { isAuthenticated } = useAuth();
 
@@ -80,7 +66,7 @@ function App() {
       {/* --- RUTA PRINCIPAL --- */}
       <Route path="/dashboard" element={
         <RutaProtegida>
-           <HomePorRol />
+           <DashboardPage />
         </RutaProtegida>
       } />
 

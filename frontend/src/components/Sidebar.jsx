@@ -62,7 +62,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       
       {/* --- Navegación --- */}
       <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 py-4 custom-scrollbar">
-
+      <SidebarLink to="/dashboard" icon={LayoutDashboard} text="Inicio" isOpen={isOpen} />
       
         {/* --- Admin --- */}
         {isAdmin && (
@@ -70,7 +70,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             {renderSectionHeader("Administración")}
             <SidebarLink to="/admin/usuarios" icon={Users} text="Usuarios" isOpen={isOpen} />
             <SidebarLink to="/admin/reportes" icon={FileText} text="Reportes" isOpen={isOpen} />
-            {/* CORREGIDO: Usamos SidebarLink para que se vea igual a los demás */}
             <SidebarLink to="/admin/servicios" icon={Globe} text="Portal Web" isOpen={isOpen} />
             <SidebarLink to="/admin/horarios" icon={Clock} text="Horarios" isOpen={isOpen} />
           </>
