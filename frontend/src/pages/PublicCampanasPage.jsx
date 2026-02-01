@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import campanaService from '../services/campana.service.js';
 import socket from '../services/socket.service.js'; 
-import { Megaphone, MapPin, Eye, Navigation, Home, Edit, ArrowLeft, Save, User, Phone, FileText, CheckCircle, Footprints, MousePointerClick } from 'lucide-react';
+import { Megaphone, MapPin, Eye, Navigation, Home, Edit, ArrowLeft, Save, MousePointerClick, Footprints } from 'lucide-react';
 import MapaCampana from '../components/MapaCampana.jsx'; 
 import Swal from 'sweetalert2';
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -26,11 +26,9 @@ const MapFix = () => {
     const map = useMap();
     useEffect(() => {
         map.invalidateSize();
-        
         const timer = setTimeout(() => {
             map.invalidateSize();
         }, 400);
-
         return () => clearTimeout(timer);
     }, [map]);
     return null;
@@ -50,7 +48,6 @@ const formatFechaSimple = (isoString) => {
     const fecha = new Date(isoString);
     return fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
-
 
 const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
     const [formData, setFormData] = useState({
@@ -73,7 +70,7 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
 
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full animate-in fade-in duration-300">
-            <div className="bg-blue-600 p-4 text-white flex items-center justify-between">
+            <div className="bg-blue-600 p-4 text-white flex items-center justify-between flex-shrink-0">
                 <h2 className="text-xl font-bold flex items-center">
                     <Home className="mr-2" /> Inscribir Domicilio
                 </h2>
@@ -83,8 +80,7 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
             </div>
 
             <div className="flex-1 flex flex-col lg:flex-row h-full overflow-hidden">
-                <div className="lg:w-2/3 h-64 lg:h-auto relative bg-gray-100 border-r border-gray-200">
-                    
+                <div className="lg:w-2/3 h-48 lg:h-auto relative bg-gray-100 border-r border-gray-200 flex-shrink-0">
                     <MapContainer center={[position.lat, position.lng]} zoom={15} style={{ height: "100%", width: "100%" }}>
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -99,17 +95,16 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
                     </div>
                 </div>
 
-                <div className="lg:w-1/3 p-6 flex flex-col justify-center bg-gray-50 overflow-y-auto">
-                    <div className="mb-6">
+                <div className="lg:w-1/3 w-full p-6 flex flex-col justify-start bg-gray-50 overflow-y-auto">
+                    <div className="mb-6 flex-shrink-0">
                         <h3 className="text-lg font-bold text-gray-800 mb-1">{campana.nombre}</h3>
                         <p className="text-sm text-gray-500">Llena tus datos para la visita.</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4 pb-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Completo</label>
                             <input required type="text" className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-                                placeholder="Ej: Juan Perez"
                                 value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})}
                             />
                         </div>
@@ -132,7 +127,6 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
                         <div>
                             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Detalle Mascotas</label>
                             <input required type="text" className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
-                                placeholder="Ej: 2 Perros, 1 Gato"
                                 value={formData.detalles_animal} onChange={e => setFormData({...formData, detalles_animal: e.target.value})}
                             />
                         </div>
@@ -147,7 +141,6 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
                         <div>
                             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Dirección / Referencia</label>
                             <textarea className="w-full border border-gray-300 rounded-lg p-3 text-sm h-20 resize-none focus:ring-2 focus:ring-blue-500 outline-none" 
-                                placeholder="Color de puerta, calle, etc."
                                 value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})}
                             />
                         </div>
@@ -161,7 +154,6 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
         </div>
     );
 };
-
 
 const PublicCampanasPage = () => {
   const navigate = useNavigate(); 
@@ -184,7 +176,6 @@ const PublicCampanasPage = () => {
       cargar();
   }, []);
 
-  // Socket
   useEffect(() => {
     if (!campanaVisualizada) return;
     socket.connect();
@@ -271,9 +262,9 @@ const PublicCampanasPage = () => {
                         </div>
                   </div>
                   <div className="flex-1 w-full relative z-0">
-                       <MapaCampana key={campanaVisualizada ? campanaVisualizada.id : 'default'} centro={mapaCentro} puntos={mapaPuntos}>
-                           <MapFix /> 
-                       </MapaCampana>
+                        <MapaCampana key={campanaVisualizada ? campanaVisualizada.id : 'default'} centro={mapaCentro} puntos={mapaPuntos}>
+                            <MapFix /> 
+                        </MapaCampana>
                   </div>
               </div>
 
@@ -307,29 +298,29 @@ const PublicCampanasPage = () => {
                                     </div>
 
                                     <div className="bg-gray-50 p-3 border-t border-gray-100 space-y-2">
-                                        <button 
-                                            onClick={() => handleVerRastreo(campana)}
-                                            className="w-full py-1.5 px-3 bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 rounded text-sm font-bold flex items-center justify-center transition-colors"
-                                        >
-                                            {campana.latitud ? <Eye className="h-4 w-4 mr-2"/> : <Navigation className="h-4 w-4 mr-2"/>}
-                                            {campana.latitud ? "Ver Ubicación" : "Rastrear Veterinarios"}
-                                        </button>
+                                            <button 
+                                                onClick={() => handleVerRastreo(campana)}
+                                                className="w-full py-1.5 px-3 bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 rounded text-sm font-bold flex items-center justify-center transition-colors"
+                                            >
+                                                {campana.latitud ? <Eye className="h-4 w-4 mr-2"/> : <Navigation className="h-4 w-4 mr-2"/>}
+                                                {campana.latitud ? "Ver Ubicación" : "Rastrear Veterinarios"}
+                                            </button>
 
-                                        {!campana.latitud ? (
-                                            <button 
-                                                onClick={() => { setCampanaVisualizada(null); setModoInscripcion(campana); }}
-                                                className="w-full py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center shadow-sm"
-                                            >
-                                                <Edit className="h-4 w-4 mr-2" /> Inscribirse
-                                            </button>
-                                        ) : (
-                                            <button 
-                                                disabled
-                                                className="w-full py-1.5 px-3 bg-gray-100 text-gray-400 rounded text-sm font-bold flex items-center justify-center cursor-default border border-gray-200"
-                                            >
-                                                <Footprints size={14} className="mr-2" /> Asistencia Presencial
-                                            </button>
-                                        )}
+                                            {!campana.latitud ? (
+                                                <button 
+                                                    onClick={() => { setCampanaVisualizada(null); setModoInscripcion(campana); }}
+                                                    className="w-full py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors flex items-center justify-center shadow-sm"
+                                                >
+                                                    <Edit className="h-4 w-4 mr-2" /> Inscribirse
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    disabled
+                                                    className="w-full py-1.5 px-3 bg-gray-100 text-gray-400 rounded text-sm font-bold flex items-center justify-center cursor-default border border-gray-200"
+                                                >
+                                                    <Footprints size={14} className="mr-2" /> Asistencia Presencial
+                                                </button>
+                                            )}
                                     </div>
                                 </div>
                               ))
