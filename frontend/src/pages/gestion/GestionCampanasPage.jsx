@@ -192,10 +192,30 @@ const GestionCampanasPage = () => {
   }, [formData.tipo, todoElInventario]);
 
   const handleAddVeterinario = () => {
-      if (!tempAsignacion.veterinario_id || !tempAsignacion.stock || parseFloat(tempAsignacion.stock) <= 0) return Swal.fire({ toast: true, icon: 'warning', title: 'Datos inválidos', position: 'top-end', showConfirmButton: false, timer: 3000 });
+      if (!tempAsignacion.veterinario_id || !tempAsignacion.stock || parseFloat(tempAsignacion.stock) <= 0) {
+          return Swal.fire({ toast: true, icon: 'warning', title: 'Datos inválidos', position: 'top-end', showConfirmButton: false, timer: 3000 });
+      }
+      
       if (asignaciones.some(a => a.veterinario_id == tempAsignacion.veterinario_id)) {
            return Swal.fire({ toast: true, icon: 'info', title: 'Veterinario ya en lista', position: 'top-end', showConfirmButton: false, timer: 3000 });
       }
+
+      const producto = todoElInventario.find(p => p.id == formData.inventario_id);
+      const stockTotalDisponible = producto ? parseFloat(producto.stock) : 0;
+
+      const stockYaAsignado = asignaciones.reduce((acc, curr) => acc + parseFloat(curr.stock), 0);
+      
+      const stockSolicitado = parseFloat(tempAsignacion.stock);
+
+      if ((stockYaAsignado + stockSolicitado) > stockTotalDisponible) {
+          const restante = stockTotalDisponible - stockYaAsignado;
+          return Swal.fire({
+              icon: 'error',
+              title: 'Stock Insuficiente',
+              text: `No hay suficiente stock en inventario. Disponibles: ${stockTotalDisponible}. Ya asignados: ${stockYaAsignado}. Solo puedes asignar hasta: ${restante.toFixed(2)} ${producto?.unidad || ''}.`
+          });
+      }
+
       const veteInfo = veterinarios.find(v => v.id == tempAsignacion.veterinario_id);
       setAsignaciones([...asignaciones, { ...tempAsignacion, nombre_vete: veteInfo.nombre }]);
       setTempAsignacion({ veterinario_id: '', stock: '' }); 
@@ -208,13 +228,34 @@ const GestionCampanasPage = () => {
   };
 
   const handleUpdateStock = (index, newVal) => {
+    const producto = todoElInventario.find(p => p.id == formData.inventario_id);
+    const stockTotalDisponible = producto ? parseFloat(producto.stock) : 0;
+
+    const stockOtros = asignaciones.reduce((acc, curr, idx) => {
+        return idx === index ? acc : acc + parseFloat(curr.stock);
+    }, 0);
+
+    const nuevoValor = parseFloat(newVal) || 0;
+
+    if ((stockOtros + nuevoValor) > stockTotalDisponible) {
+        Swal.fire({ 
+            toast: true, 
+            icon: 'error', 
+            title: 'Excede stock disponible', 
+            position: 'top-end', 
+            showConfirmButton: false, 
+            timer: 2000 
+        });
+        return; 
+    }
+
     const nuevas = [...asignaciones];
     nuevas[index].stock = newVal; 
     setAsignaciones(nuevas);
   };
 
   const calcularStockTotalRequerido = () => {
-      return asignaciones.reduce((acc, curr) => acc + parseFloat(curr.stock), 0);
+      return asignaciones.reduce((acc, curr) => acc + parseFloat(curr.stock || 0), 0);
   };
 
   const handleOpenCreate = () => {
@@ -534,8 +575,8 @@ const GestionCampanasPage = () => {
                                     <tbody>
                                         {asignaciones.map((asig, idx) => (
                                             <tr key={idx} className="bg-gray-50 rounded-lg group"><td className="p-3 font-semibold text-gray-800 rounded-l-lg">{asig.nombre_vete}</td><td className="p-3 text-right">
-                                              <input type="number" min="0" step={stepInput} value={asig.stock} onChange={(e) => handleUpdateStock(idx, e.target.value)} className="w-20 border border-gray-300 rounded-md px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 outline-none" />
-                                              <span className="ml-2 text-[10px] text-gray-400 font-bold">{productoSeleccionado?.unidad}</span>
+                                                <input type="number" min="0" step={stepInput} value={asig.stock} onChange={(e) => handleUpdateStock(idx, e.target.value)} className="w-20 border border-gray-300 rounded-md px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <span className="ml-2 text-[10px] text-gray-400 font-bold">{productoSeleccionado?.unidad}</span>
                                             </td><td className="p-3 text-center rounded-r-lg"><button type="button" onClick={() => handleRemoveVeterinario(idx)} className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4"/></button></td></tr>
                                         ))}
                                         <tr className="bg-blue-600 text-white font-bold"><td className="p-3 rounded-l-lg">TOTAL A DESCONTAR</td><td className="p-3 text-right">{calcularStockTotalRequerido()} {productoSeleccionado?.unidad}</td><td className="p-3 rounded-r-lg"></td></tr>
@@ -555,8 +596,8 @@ const GestionCampanasPage = () => {
                     {tipoUbicacion === 'fijo' && (
                         <div className={`h-80 w-full rounded-2xl overflow-hidden border-2 border-gray-300 shadow-lg relative z-0 ${editingStatus === 'Ejecucion' ? 'grayscale opacity-60 pointer-events-none' : ''}`}>
                             <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
-                             <MapFix />   
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />    
+                             <MapFix />   
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />    
                             <LocationPicker onLocationSelected={handleModalMapClick} position={formData.latitud ? [formData.latitud, formData.longitud] : null} disabled={editingStatus === 'Ejecucion'} />
                             </MapContainer>
                         </div>
