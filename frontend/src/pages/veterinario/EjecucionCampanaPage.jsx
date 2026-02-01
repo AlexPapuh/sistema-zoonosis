@@ -262,6 +262,16 @@ const handleRegistrarAtencion = async (e) => {
           
           setCampana(prev => ({...prev, stock_asignado: respuesta.nuevo_stock}));
 
+          if (respuesta.credenciales) {
+            await Swal.fire({
+                title: '¡Usuario Creado!',
+                html: `Se creó una cuenta para el propietario.<br/><b>Usuario:</b> ${respuesta.credenciales.email}<br/><b>Contraseña:</b> ${respuesta.credenciales.password_temporal}`,
+                icon: 'success',
+                confirmButtonColor: '#4F46E5',
+                confirmButtonText: 'OK'
+            });
+          }
+
           const preguntaOtra = await Swal.fire({
               title: '¡Vacunación Exitosa!',
               text: '¿Deseas registrar otra mascota para este mismo domicilio?',
