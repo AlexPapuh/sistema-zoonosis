@@ -236,11 +236,11 @@ const PublicCasosPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Tu Nombre</label>
-                                <input required name="nombre_contacto" className="w-full border rounded-lg p-2.5 text-sm bg-white" placeholder="Ej: Juan Perez" value={formData.nombre_contacto} onChange={handleInputChange}/>
+                                <input required name="nombre_contacto" className="w-full border rounded-lg p-2.5 text-sm bg-white" placeholder="" value={formData.nombre_contacto} onChange={handleInputChange}/>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Tu Celular / WhatsApp</label>
-                                <input required name="telefono_contacto" type="tel" className="w-full border rounded-lg p-2.5 text-sm bg-white" placeholder="Ej: 70000000" value={formData.telefono_contacto} onChange={handleInputChange}/>
+                                <input required name="telefono_contacto" type="tel" className="w-full border rounded-lg p-2.5 text-sm bg-white" placeholder="" value={formData.telefono_contacto} onChange={handleInputChange}/>
                             </div>
                         </div>
                     </div>
@@ -256,7 +256,7 @@ const PublicCasosPage = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Título Breve</label>
-                            <input type="text" name="titulo" placeholder="Ej: Perro Golden visto..." required className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
+                            <input type="text" name="titulo" placeholder="" required className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
                         </div>
                     </div>
                     <div>

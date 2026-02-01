@@ -14,7 +14,7 @@ const DashboardPage = () => {
   switch (user.rol) {
     case 'Admin':
  
-      return <Navigate to="/dashboard/reportes" replace />;
+      return <Navigate to="/admin/reportes" replace />;
 
     case 'Veterinario':
       return <VeteDashboard />;
