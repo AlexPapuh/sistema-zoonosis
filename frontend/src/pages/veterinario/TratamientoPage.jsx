@@ -52,30 +52,24 @@ const TratamientoPage = () => {
     const [loading, setLoading] = useState(true);
     const [citaId, setCitaId] = useState(null);
     
-    // --- LÓGICA DE FECHAS ---
     const hoy = new Date();
     const offset = hoy.getTimezoneOffset();
     const localDate = new Date(hoy.getTime() - (offset * 60 * 1000));
     const fechaMaximaNacimiento = localDate.toISOString().split('T')[0];
 
-    // Datos Generales
     const [todosPropietarios, setTodosPropietarios] = useState([]);
     const [inventario, setInventario] = useState([]); 
     
-    // Búsqueda Propietario
     const [busqueda, setBusqueda] = useState('');
     const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
     const [propietarioSeleccionado, setPropietarioSeleccionado] = useState(null);
     
-    // Mascota
     const [mascotasDelPropietario, setMascotasDelPropietario] = useState([]);
     const [pacienteSeleccionadoId, setPacienteSeleccionadoId] = useState(''); 
     
-    // Insumos
     const [busquedaInsumo, setBusquedaInsumo] = useState('');
     const [insumosSeleccionados, setInsumosSeleccionados] = useState({}); 
 
-    // Formularios
     const [formMascota, setFormMascota] = useState({
         nombre: '', especie: 'Perro', raza: '', sexo: 'Macho', fechaNacimiento: '', 
         peso: '', otraEspecie: ''
@@ -87,7 +81,6 @@ const TratamientoPage = () => {
         diagnostico: '', tratamiento: '', notas: ''
     });
 
-    // --- ESTADOS PARA VACUNAS ---
     const [esVacuna, setEsVacuna] = useState(false);
     const [tipoVacuna, setTipoVacuna] = useState('Antirrábica');
     const [diasRefuerzo, setDiasRefuerzo] = useState('365'); 
@@ -108,16 +101,13 @@ const TratamientoPage = () => {
         }
     }, [esVacuna, diasRefuerzo]);
 
-    // DISEÑO: HOJA DE LIBRETA SANITARIA ---
 const generarCertificadoPDF = () => {
-        const doc = new jsPDF('l', 'mm', 'a5'); // A5 Horizontal
+        const doc = new jsPDF('l', 'mm', 'a5'); 
         
-        // Colores
         const colorFondoHeader = [50, 100, 100]; 
         const colorTextoHeader = [255, 255, 255]; 
         const colorLineas = [100, 100, 100]; 
 
-        // 1. ENCABEZADO
         doc.setFillColor(...colorFondoHeader);
         doc.rect(10, 8, 190, 8, 'F');
         
@@ -126,7 +116,6 @@ const generarCertificadoPDF = () => {
         doc.setTextColor(...colorTextoHeader);
         doc.text("DATOS DE LA MASCOTA", 105, 13.5, null, null, "center");
 
-        // Datos Mascota
         doc.setFillColor(245, 245, 245);
         doc.rect(10, 16, 190, 25, 'F');
         
@@ -154,7 +143,6 @@ const generarCertificadoPDF = () => {
         doc.setFont("helvetica", "bold"); doc.text("SEXO:", 130, 23);
         doc.setFont("helvetica", "normal"); doc.text(formMascota.sexo.toUpperCase(), 142, 23);
 
-        // Fila 2
         doc.setFont("helvetica", "bold"); doc.text("NOMBRE:", 15, 30);
         doc.setFont("helvetica", "normal"); doc.text(formMascota.nombre.toUpperCase(), 32, 30);
 
@@ -177,7 +165,6 @@ const generarCertificadoPDF = () => {
         const fila2Y = 91; 
 
         const dibujarHeaderSeccion = (x, y, titulo, cols) => {
-            // Título
             doc.setFillColor(...colorFondoHeader);
             doc.rect(x, y, bloqueAncho, 6, 'F');
             doc.setTextColor(...colorTextoHeader);
@@ -185,7 +172,6 @@ const generarCertificadoPDF = () => {
             doc.setFont("helvetica", "bold");
             doc.text(titulo, x + (bloqueAncho / 2), y + 4, null, null, "center");
 
-            // Cabecera Columnas
             doc.setFillColor(230, 230, 230);
             doc.rect(x, y + 6, bloqueAncho, 5, 'F');
             doc.setTextColor(0);
@@ -197,11 +183,9 @@ const generarCertificadoPDF = () => {
                 currentX += col.width;
             });
 
-            // Marcos
             doc.setDrawColor(...colorLineas);
             doc.rect(x, y, bloqueAncho, bloqueAlto); 
             
-            // Verticales
             currentX = x;
             cols.forEach((col, index) => {
                 if(index < cols.length - 1) {
@@ -210,13 +194,11 @@ const generarCertificadoPDF = () => {
                 currentX += col.width;
             });
             
-            // Horizontales
             for(let i=1; i<=4; i++) {
                 doc.line(x, y + 11 + (i * 8), x + bloqueAncho, y + 11 + (i * 8));
             }
         };
 
-        // Bloques
         dibujarHeaderSeccion(col1X, fila1Y, "CONTROL DE VACUNAS", [
             { name: "FECHA", width: 20 },
             { name: "VACUNA / PRODUCTO", width: 47 },
@@ -238,7 +220,6 @@ const generarCertificadoPDF = () => {
             { name: "PRÓXIMO", width: 25 }
         ]);
 
-        // 3. LLENAR DATOS
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 139); 
@@ -263,7 +244,6 @@ const generarCertificadoPDF = () => {
             doc.text(fechaProx, col1X + 79.5, yBase, null, null, "center");
         }
 
-        // 4. PIE DE PÁGINA
         doc.setTextColor(0);
         doc.setFont("helvetica", "normal");
         
@@ -414,7 +394,6 @@ const generarCertificadoPDF = () => {
         setInsumosSeleccionados(prev => ({ ...prev, [id]: cantidad }));
     };
     
-    // --- MANEJO DE FORMULARIOS ---
     const handleMascotaChange = (e) => {
         const { name, value } = e.target;
         if (name === 'fechaNacimiento' && value > fechaMaximaNacimiento) {
@@ -431,7 +410,6 @@ const generarCertificadoPDF = () => {
     const handlePropietarioChange = (e) => setFormPropietario({ ...formPropietario, [e.target.name]: e.target.value });
     const handleMapClick = (latlng) => setFormPropietario({ ...formPropietario, latitud: latlng.lat, longitud: latlng.lng });
 
-    // --- GUARDAR CONSULTA ---
     const handleRegistrarConsulta = async (e) => {
         e.preventDefault();
         
@@ -508,11 +486,13 @@ const generarCertificadoPDF = () => {
                 await Swal.fire({
                     title: '¡Usuario Creado!',
                     html: `Se creó una cuenta para el propietario.<br/><b>Usuario:</b> ${res.credenciales.email}<br/><b>Contraseña:</b> ${res.credenciales.password_temporal}`,
-                    icon: 'success'
+                    icon: 'success',
+                    confirmButtonColor: '#3B82F6',
+                    confirmButtonText: 'Entendido'
                 });
             } 
             
-            else if (esVacuna) {
+            if (esVacuna) {
                 const result = await Swal.fire({
                     title: '¡Vacunación Registrada!',
                     text: 'Los datos se guardaron y el recordatorio de WhatsApp se programó. ¿Deseas imprimir la hoja de la libreta sanitaria?',
@@ -529,7 +509,7 @@ const generarCertificadoPDF = () => {
                 }
             } 
             
-            else {
+            else if (!res.credenciales) {
                 await Swal.fire({
                     icon: 'success', title: '¡Consulta Registrada!',
                     text: 'Los datos se han guardado correctamente.',

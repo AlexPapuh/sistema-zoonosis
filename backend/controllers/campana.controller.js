@@ -278,6 +278,10 @@ exports.registrarAtencion = async (req, res) => {
             inscripcion_id 
         } = req.body;
 
+        const [campanaRows] = await connection.query('SELECT nombre, tipo, inventario_id FROM campanas WHERE id = ?', [id_campana]);
+        if (campanaRows.length === 0) throw new Error("Campaña no encontrada");
+        const datosCampana = campanaRows[0];
+
         const pesoFinal = (peso === '' || peso === undefined || peso === null) ? null : peso;
         const latFinal = latitudPropietario === '' ? null : latitudPropietario;
         const lngFinal = longitudPropietario === '' ? null : longitudPropietario;
@@ -355,6 +359,12 @@ exports.registrarAtencion = async (req, res) => {
             throw new Error(`Tu stock personal es insuficiente. Tienes ${stockVetActual}, necesitas ${dosisUsar}.`);
         }
 
+        const nuevoStockVet = stockVetActual - dosisUsar;
+        await connection.query(
+            "UPDATE campana_veterinarios SET stock_actual = ? WHERE campana_id = ? AND veterinario_id = ?",
+            [nuevoStockVet, id_campana, veterinario_id]
+        );
+
         if (inscripcion_id) {
              await connection.query(
                 `UPDATE campana_inscripciones SET 
@@ -378,12 +388,43 @@ exports.registrarAtencion = async (req, res) => {
             );
         }
 
-        const nuevoStockVet = stockVetActual - dosisUsar;
+        let nombreInsumo = "Vacuna de Campaña";
+        if (datosCampana.inventario_id) {
+            const [invRows] = await connection.query("SELECT nombre, unidad FROM inventario WHERE id = ?", [datosCampana.inventario_id]);
+            if (invRows.length > 0) {
+                nombreInsumo = `${invRows[0].nombre} (${dosisUsar} ${invRows[0].unidad})`;
+            }
+        }
+
+        const tratamientoTexto = `Campaña: ${datosCampana.nombre}.\n[Medicamentos: ${nombreInsumo}]`;
         
-        await connection.query(
-            "UPDATE campana_veterinarios SET stock_actual = ? WHERE campana_id = ? AND veterinario_id = ?",
-            [nuevoStockVet, id_campana, veterinario_id]
+        const [histRes] = await connection.query(
+            'INSERT INTO historiales_medicos (animal_id, veterinario_id, fecha_consulta, diagnostico, tratamiento, notas, peso) VALUES (?, ?, NOW(), ?, ?, ?, ?)',
+            [
+                finalAnimalId, 
+                veterinario_id, 
+                `Atención en Campaña (${datosCampana.tipo})`, 
+                tratamientoTexto, 
+                "Registro automático.", 
+                pesoFinal
+            ]
         );
+        const historialId = histRes.insertId;
+
+        if (datosCampana.inventario_id) {
+            await connection.query(
+                'INSERT INTO historial_insumos (historial_id, inventario_id, cantidad) VALUES (?, ?, ?)',
+                [historialId, datosCampana.inventario_id, dosisUsar]
+            );
+
+            let fechaProxima = new Date();
+            fechaProxima.setFullYear(fechaProxima.getFullYear() + 1); 
+
+            await connection.query(
+                `INSERT INTO animal_vacunas (animal_id, inventario_id, fecha_aplicacion, fecha_proxima_dosis, notificado, veterinario_id) VALUES (?, ?, NOW(), ?, 0, ?)`,
+                [finalAnimalId, datosCampana.inventario_id, fechaProxima, veterinario_id]
+            );
+        }
 
         await connection.commit();
 
