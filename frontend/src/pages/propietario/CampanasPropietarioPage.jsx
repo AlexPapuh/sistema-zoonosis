@@ -24,6 +24,24 @@ const formatFechaSimple = (isoString) => {
     return fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', lat: -19.585254, lng: -65.745972 }, { id: 'Distrito 2', lat: -19.587633, lng: -65.746918 },
+        { id: 'Distrito 3', lat: -19.590314, lng: -65.747041 }, { id: 'Distrito 4', lat: -19.598222, lng: -65.742608 },
+        { id: 'Distrito 5', lat: -19.582477, lng: -65.752344 }, { id: 'Distrito 6', lat: -19.587537, lng: -65.754547 },
+        { id: 'Distrito 7', lat: -19.595141, lng: -65.752905 }, { id: 'Distrito 8', lat: -19.591430, lng: -65.757487 },
+        { id: 'Distrito 9', lat: -19.571709, lng: -65.759418 }, { id: 'Distrito 10', lat: -19.572161, lng: -65.765592 },
+        { id: 'Distrito 11', lat: -19.577416, lng: -65.763750 }, { id: 'Distrito 12', lat: -19.574175, lng: -65.772255 },
+        { id: 'Distrito 17', lat: -19.557750, lng: -65.759351 }, { id: 'Distrito 19', lat: -19.556577, lng: -65.763539 },
+        { id: 'Distrito 20', lat: -19.585788, lng: -65.780453 },
+    ],
+    rurales: [
+        { id: 'Distrito 13', lat: -19.476637, lng: -65.798994 }, { id: 'Distrito 14', lat: -19.463732, lng: -65.637103 },
+        { id: 'Distrito 15', lat: -19.449177, lng: -65.595153 }, { id: 'Distrito 16', lat: -19.639575, lng: -65.740161 },
+        { id: 'Distrito 18', lat: -19.429259, lng: -65.718727 },
+    ]
+};
+
 
 const PanelInscripcion = ({ campana, user, onCancel, onConfirm }) => {
     const [paso, setPaso] = useState(1);
@@ -259,6 +277,8 @@ const CampanasPropietarioPage = () => {
   const [mapaPuntos, setMapaPuntos] = useState([]);
   const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
   const [campanaVisualizada, setCampanaVisualizada] = useState(null); 
+  
+  const [rutaCampanaActiva, setRutaCampanaActiva] = useState([]);
 
   const cargarDatos = async () => {
       try {
@@ -341,7 +361,10 @@ const CampanasPropietarioPage = () => {
   const handleVerMapaRastreo = (campana) => {
       setModoInscripcion(null);
       setCampanaVisualizada(campana);
+      
       const puntosIniciales = [];
+      let nuevoCentro = [-19.5894, -65.7541]; // Por defecto Potosí Centro
+      let rutaDecodificada = [];
 
       if (campana.latitud && campana.longitud) {
           puntosIniciales.push({
@@ -352,12 +375,27 @@ const CampanasPropietarioPage = () => {
               descripcion: campana.nombre,
               tipo: 'fijo'
           });
-          setMapaCentro([campana.latitud, campana.longitud]);
-      } else {
-          setMapaCentro([-19.5894, -65.7541]); 
+          nuevoCentro = [campana.latitud, campana.longitud];
+      } 
+      else if (!campana.latitud && campana.detalles_zona) {
+          try {
+              const puntosRuta = JSON.parse(campana.detalles_zona);
+              if (Array.isArray(puntosRuta) && puntosRuta.length > 0) {
+                  rutaDecodificada = puntosRuta;
+                  nuevoCentro = puntosRuta[0]; // Centrar en el inicio del recorrido
+              }
+          } catch (e) {
+              const distBuscado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === campana.distrito);
+              if (distBuscado) {
+                  nuevoCentro = [distBuscado.lat, distBuscado.lng];
+              }
+          }
       }
 
+      setRutaCampanaActiva(rutaDecodificada);
+      setMapaCentro(nuevoCentro);
       setMapaPuntos(puntosIniciales);
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -393,7 +431,7 @@ const CampanasPropietarioPage = () => {
                     </div>
                 </div>
                 <div className="flex-1 w-full relative z-0">
-                      <MapaCampana centro={mapaCentro} puntos={mapaPuntos} />
+                      <MapaCampana centro={mapaCentro} puntos={mapaPuntos} ruta={rutaCampanaActiva} />
                 </div>
               </div>
 
@@ -420,7 +458,18 @@ const CampanasPropietarioPage = () => {
                                         <p className="text-xs text-gray-600 mb-3 line-clamp-3">{campana.descripcion}</p>
                                         <div className="text-xs text-gray-500 space-y-1 border-t border-gray-100 pt-2">
                                             <p><strong>Fin:</strong> {formatFechaSimple(campana.fecha_fin)}</p>
-                                            {campana.latitud ? <p className="text-blue-600 flex items-center font-semibold"><MapPin className="h-3 w-3 mr-1"/> Punto Fijo</p> : <p className="text-green-600 flex items-center font-semibold"><MapPin className="h-3 w-3 mr-1"/> Puerta a Puerta</p>}
+                                            {campana.latitud ? (
+                                                <p className="text-blue-600 flex items-center font-semibold"><MapPin className="h-3 w-3 mr-1"/> Punto Fijo</p>
+                                            ) : (
+                                                <div className="text-green-600 flex flex-col font-semibold">
+                                                    <span className="flex items-center"><MapPin className="h-3 w-3 mr-1"/> Puerta a Puerta</span>
+                                                    {campana.detalles_zona && (
+                                                        <span className="text-gray-500 font-normal mt-1 w-full truncate block bg-gray-50 p-1 rounded">
+                                                            📍 Zonas: {campana.detalles_zona.startsWith('[') ? 'Ruta trazada en mapa' : campana.detalles_zona}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

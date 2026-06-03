@@ -3,9 +3,9 @@ import propietarioService from '../../services/propietario.service.js';
 import animalService from '../../services/animal.service.js';
 import historialService from '../../services/historial.service.js';
 import inventarioService from '../../services/inventario.service.js';
-import { User, Search, Dog, Save, FileText, Stethoscope, ArrowLeft, Box, Syringe } from 'lucide-react';
+import { User, Search, Dog, Save, FileText, Stethoscope, ArrowLeft, Box, Syringe, Lock, AlertTriangle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import Swal from 'sweetalert2'; 
 import jsPDF from 'jspdf';
@@ -20,6 +20,55 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+
+// --- LISTA DE DISTRITOS DE POTOSÍ CON COORDENADAS ---
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', nombre: 'Distrito 1: San Gerardo', lat: -19.585254, lng: -65.745972 },
+        { id: 'Distrito 2', nombre: 'Distrito 2: San Martín', lat: -19.587633, lng: -65.746918 },
+        { id: 'Distrito 3', nombre: 'Distrito 3: San Juan', lat: -19.590314, lng: -65.747041 },
+        { id: 'Distrito 4', nombre: 'Distrito 4: San Cristóbal', lat: -19.598222, lng: -65.742608 },
+        { id: 'Distrito 5', nombre: 'Distrito 5: San Roque', lat: -19.582477, lng: -65.752344 },
+        { id: 'Distrito 6', nombre: 'Distrito 6: Zona Central', lat: -19.587537, lng: -65.754547 },
+        { id: 'Distrito 7', nombre: 'Distrito 7: San Pedro', lat: -19.595141, lng: -65.752905 },
+        { id: 'Distrito 8', nombre: 'Distrito 8: San Benito', lat: -19.591430, lng: -65.757487 },
+        { id: 'Distrito 9', nombre: 'Distrito 9: Las Delicias', lat: -19.571709, lng: -65.759418 },
+        { id: 'Distrito 10', nombre: 'Distrito 10: Ciudad Satélite', lat: -19.572161, lng: -65.765592 },
+        { id: 'Distrito 11', nombre: 'Distrito 11: San Clemente', lat: -19.577416, lng: -65.763750 },
+        { id: 'Distrito 12', nombre: 'Distrito 12: Villa Copacabana', lat: -19.574175, lng: -65.772255 },
+        { id: 'Distrito 17', nombre: 'Distrito 17: Lecherías', lat: -19.557750, lng: -65.759351 },
+        { id: 'Distrito 19', nombre: 'Distrito 19: Universidad', lat: -19.556577, lng: -65.763539 },
+        { id: 'Distrito 20', nombre: 'Distrito 20: Cantumarca', lat: -19.585788, lng: -65.780453 },
+    ],
+    rurales: [
+        { id: 'Distrito 13', nombre: 'Distrito 13: Tarapaya', lat: -19.476637, lng: -65.798994 },
+        { id: 'Distrito 14', nombre: 'Distrito 14: Chullchucani', lat: -19.463732, lng: -65.637103 },
+        { id: 'Distrito 15', nombre: 'Distrito 15: Huari Huari', lat: -19.449177, lng: -65.595153 },
+        { id: 'Distrito 16', nombre: 'Distrito 16: Concepción (Rural)', lat: -19.639575, lng: -65.740161 },
+        { id: 'Distrito 18', nombre: 'Distrito 18: Manquiri', lat: -19.429259, lng: -65.718727 },
+    ]
+};
+
+const MapFix = () => {
+    const map = useMap();
+    useEffect(() => {
+        map.invalidateSize(); 
+        const timer = setTimeout(() => map.invalidateSize(), 400);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
+
+// --- ANIMADOR DE LA CÁMARA DEL MAPA ---
+const ChangeMapView = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 16, { duration: 1.2 });
+        }
+    }, [center, map]);
+    return null;
+};
 
 const LocationPicker = ({ onLocationSelected, position }) => {
     useMapEvents({ click(e) { onLocationSelected(e.latlng); }, });
@@ -46,6 +95,26 @@ const calcularEdad = (fechaNac) => {
     return "Menos de 1 mes";
 };
 
+// --- FUNCIÓN PARA EVALUAR FECHAS DE VENCIMIENTO ---
+const determinarEstadoVencimiento = (fechaString) => {
+    if (!fechaString) return { estado: 'ok', dias: 999 };
+    
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    // Parseo seguro de fecha evitando problemas de zona horaria
+    const [year, month, day] = fechaString.split('T')[0].split('-');
+    const fechaVenc = new Date(year, month - 1, day);
+    fechaVenc.setHours(0, 0, 0, 0);
+
+    const diffTime = fechaVenc - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { estado: 'vencido', dias: diffDays };
+    if (diffDays <= 30) return { estado: 'por_vencer', dias: diffDays }; // Alerta de 30 días
+    return { estado: 'ok', dias: diffDays };
+};
+
 const TratamientoPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -70,13 +139,18 @@ const TratamientoPage = () => {
     const [busquedaInsumo, setBusquedaInsumo] = useState('');
     const [insumosSeleccionados, setInsumosSeleccionados] = useState({}); 
 
+    // --- ESTADO PARA CONTROLAR EL CENTRO DEL MAPA ---
+    const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
+
     const [formMascota, setFormMascota] = useState({
         nombre: '', especie: 'Perro', raza: '', sexo: 'Macho', fechaNacimiento: '', 
         peso: '', otraEspecie: ''
     });
+    
     const [formPropietario, setFormPropietario] = useState({
-        nombre: '', telefono: '', email: '', direccion: '', latitud: '', longitud: ''
+        nombre: '', telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: ''
     });
+    
     const [formTratamiento, setFormTratamiento] = useState({
         diagnostico: '', tratamiento: '', notas: ''
     });
@@ -101,7 +175,7 @@ const TratamientoPage = () => {
         }
     }, [esVacuna, diasRefuerzo]);
 
-const generarCertificadoPDF = () => {
+    const generarCertificadoPDF = () => {
         const doc = new jsPDF('l', 'mm', 'a5'); 
         
         const colorFondoHeader = [50, 100, 100]; 
@@ -255,6 +329,7 @@ const generarCertificadoPDF = () => {
 
         doc.save(`Libreta_${formMascota.nombre}.pdf`);
     };
+
     useEffect(() => {
         const cargarDatos = async () => {
             try {
@@ -297,7 +372,7 @@ const generarCertificadoPDF = () => {
             }
         };
         cargarDatos();
-    }, []);
+    }, [location.state]);
 
     useEffect(() => {
         if (busqueda.length > 2) {
@@ -311,9 +386,25 @@ const generarCertificadoPDF = () => {
         }
     }, [busqueda, todosPropietarios]);
 
-    const inventarioFiltrado = inventario.filter(prod => 
-        prod.nombre.toLowerCase().includes(busquedaInsumo.toLowerCase())
-    );
+    // --- PROCESAMIENTO Y FILTRADO DEL INVENTARIO (CON VENCIMIENTOS Y ORDENAMIENTO) ---
+    const inventarioProcesado = inventario.map(prod => {
+        const { estado, dias } = determinarEstadoVencimiento(prod.fecha_vencimiento);
+        return { ...prod, estadoVencimiento: estado, diasVencimiento: dias };
+    });
+
+    const inventarioFiltrado = inventarioProcesado
+        .filter(prod => prod.nombre.toLowerCase().includes(busquedaInsumo.toLowerCase()))
+        .sort((a, b) => {
+            // Prioridad 1: Los que están 'por_vencer' van arriba de la lista
+            if (a.estadoVencimiento === 'por_vencer' && b.estadoVencimiento !== 'por_vencer') return -1;
+            if (b.estadoVencimiento === 'por_vencer' && a.estadoVencimiento !== 'por_vencer') return 1;
+            
+            // Prioridad 2: Los 'vencidos' van hasta el fondo
+            if (a.estadoVencimiento === 'vencido' && b.estadoVencimiento !== 'vencido') return 1;
+            if (b.estadoVencimiento === 'vencido' && a.estadoVencimiento !== 'vencido') return -1;
+            
+            return 0; 
+        });
 
     const seleccionarPropietario = async (prop) => {
         setPropietarioSeleccionado(prop);
@@ -324,6 +415,7 @@ const generarCertificadoPDF = () => {
             telefono: prop.telefono || '',
             email: prop.email,
             direccion: prop.direccion || '',
+            distrito: prop.distrito || '', 
             latitud: prop.latitud,
             longitud: prop.longitud
         });
@@ -339,7 +431,7 @@ const generarCertificadoPDF = () => {
         setMascotasDelPropietario([]);
         setPacienteSeleccionadoId('');
         setFormMascota({ nombre: '', especie: 'Perro', raza: '', sexo: 'Macho', fechaNacimiento: '', peso: '', otraEspecie: '' });
-        setFormPropietario({ nombre: '', telefono: '', email: '', direccion: '', latitud: '', longitud: '' });
+        setFormPropietario({ nombre: '', telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: '' });
     };
 
     const handlePacienteSelect = (e) => {
@@ -407,15 +499,28 @@ const generarCertificadoPDF = () => {
     };
 
     const handleTratamientoChange = (e) => setFormTratamiento({ ...formTratamiento, [e.target.name]: e.target.value });
-    const handlePropietarioChange = (e) => setFormPropietario({ ...formPropietario, [e.target.name]: e.target.value });
+    
+    const handlePropietarioChange = (e) => {
+        const { name, value } = e.target;
+        
+        setFormPropietario(prev => ({ ...prev, [name]: value }));
+
+        if (name === 'distrito') {
+            const distritoEncontrado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === value);
+            if (distritoEncontrado) {
+                setMapaCentro([distritoEncontrado.lat, distritoEncontrado.lng]);
+            }
+        }
+    };
+
     const handleMapClick = (latlng) => setFormPropietario({ ...formPropietario, latitud: latlng.lat, longitud: latlng.lng });
 
     const handleRegistrarConsulta = async (e) => {
         e.preventDefault();
         
         const esNuevoProp = !propietarioSeleccionado;
-        if (esNuevoProp && !formPropietario.nombre) {
-             return Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Ingrese nombre del propietario' });
+        if (esNuevoProp && (!formPropietario.nombre || !formPropietario.distrito)) {
+             return Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Ingrese el nombre y seleccione el distrito del propietario' });
         }
         
         const esNuevaMascota = pacienteSeleccionadoId === 'nuevo' || esNuevoProp;
@@ -458,6 +563,7 @@ const generarCertificadoPDF = () => {
             telefonoPropietario: formPropietario.telefono,
             emailPropietario: formPropietario.email,
             direccionPropietario: formPropietario.direccion,
+            distritoPropietario: formPropietario.distrito, 
             latitudPropietario: formPropietario.latitud,
             longitudPropietario: formPropietario.longitud,
             
@@ -532,6 +638,15 @@ const generarCertificadoPDF = () => {
 
     if (loading) return <div className="p-8 text-center">Cargando...</div>;
 
+    // --- LÓGICA DE BLOQUEO DE ATENCIÓN PARA PACIENTES CON DECESO/PÉRDIDA ---
+    const mascotaSeleccionadaObj = pacienteSeleccionadoId && pacienteSeleccionadoId !== 'nuevo' 
+        ? mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId) 
+        : null;
+
+    const estaInhabilitado = mascotaSeleccionadaObj?.estado && 
+        (mascotaSeleccionadaObj.estado.toLowerCase().includes('deceso') || 
+         mascotaSeleccionadaObj.estado.toLowerCase().includes('perdid'));
+
     return (
         <div className="container mx-auto pb-20">
             <div className="mb-6 flex items-center">
@@ -571,12 +686,31 @@ const generarCertificadoPDF = () => {
                                     <input type="text" name="nombre" placeholder="Nombre Completo" required className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.nombre} onChange={handlePropietarioChange}/>
                                     <input type="text" name="telefono" placeholder="Teléfono" className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.telefono} onChange={handlePropietarioChange}/>
                                     <input type="email" name="email" placeholder="Email" required className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.email} onChange={handlePropietarioChange}/>
+                                    
+                                    <select 
+                                        name="distrito" 
+                                        className="w-full border border-gray-300 rounded p-2 mb-2 text-sm bg-white cursor-pointer" 
+                                        value={formPropietario.distrito} 
+                                        onChange={handlePropietarioChange} 
+                                        required
+                                    >
+                                        <option value="" disabled>-- Selecciona un Distrito --</option>
+                                        <optgroup label="🏢 Urbanos">
+                                            {DISTRITOS_POTOSI.urbanos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                                        </optgroup>
+                                        <optgroup label="🌲 Rurales">
+                                            {DISTRITOS_POTOSI.rurales.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                                        </optgroup>
+                                    </select>
+                                    
                                     <input type="text" name="direccion" placeholder="Dirección Escrita" className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.direccion} onChange={handlePropietarioChange}/>
                                     
                                     <label className="block text-xs font-medium text-gray-600 mb-1">Marcar Casa en Mapa:</label>
                                     <div className="h-32 w-full rounded overflow-hidden border relative z-0">
-                                            <MapContainer center={[-19.5894, -65.7541]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                                            <MapContainer center={mapaCentro} zoom={13} style={{ height: '100%', width: '100%' }}>
                                                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                                <MapFix /> 
+                                                <ChangeMapView center={mapaCentro} /> 
                                                 <LocationPicker onLocationSelected={handleMapClick} position={formPropietario.latitud ? [formPropietario.latitud, formPropietario.longitud] : null} />
                                             </MapContainer>
                                     </div>
@@ -586,6 +720,9 @@ const generarCertificadoPDF = () => {
                             <div className="bg-blue-50 p-3 rounded border border-blue-100">
                                 <p className="font-bold text-blue-900">{propietarioSeleccionado.nombre}</p>
                                 <p className="text-xs text-blue-600">{propietarioSeleccionado.direccion}</p>
+                                {propietarioSeleccionado.distrito && (
+                                    <p className="text-xs font-semibold text-blue-800 mt-1">📍 {propietarioSeleccionado.distrito}</p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -600,9 +737,16 @@ const generarCertificadoPDF = () => {
                                 onChange={handlePacienteSelect} 
                             >
                                 <option value="">-- Seleccionar Paciente --</option>
-                                {mascotasDelPropietario.map(m => (
-                                    <option key={m.id} value={m.id}>{m.nombre} ({m.especie})</option>
-                                ))}
+                                {mascotasDelPropietario.map(m => {
+                                    const estadoEspecial = (m.estado && (m.estado.toLowerCase().includes('deceso') || m.estado.toLowerCase().includes('perdid'))) 
+                                        ? ` - [${m.estado.toUpperCase()}]` 
+                                        : '';
+                                    return (
+                                        <option key={m.id} value={m.id}>
+                                            {m.nombre} ({m.especie}{estadoEspecial})
+                                        </option>
+                                    );
+                                })}
                                 <option value="nuevo">+ Registrar Nueva Mascota</option>
                             </select>
                         )}
@@ -639,8 +783,23 @@ const generarCertificadoPDF = () => {
                             <div className="bg-purple-50 p-4 rounded border border-purple-100 mt-2 text-center animate-fade-in">
                                 <div className="flex justify-between items-start">
                                     <div className="text-left">
-                                        <p className="text-purple-900 font-bold text-lg">{mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.nombre}</p>
-                                        <p className="text-xs text-purple-600">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-purple-900 font-bold text-lg">{mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.nombre}</p>
+                                            
+                                            {(() => {
+                                                const mascota = mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId);
+                                                if (mascota?.estado && (mascota.estado.toLowerCase().includes('deceso') || mascota.estado.toLowerCase().includes('perdid'))) {
+                                                    return (
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${mascota.estado.toLowerCase().includes('deceso') ? 'bg-gray-800 text-gray-100' : 'bg-red-500 text-white'}`}>
+                                                            {mascota.estado}
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                        
+                                        <p className="text-xs text-purple-600 mt-1">
                                             {mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.raza} | {calcularEdad(mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.fecha_nacimiento)}
                                         </p>
                                     </div>
@@ -648,11 +807,19 @@ const generarCertificadoPDF = () => {
                                 </div>
                                 
                                 <div className="mt-3 pt-3 border-t border-purple-200">
-                                    <label className="block text-xs font-bold text-gray-700 mb-1 text-left">Peso Actual (kg):</label>
-                                    <div className="flex items-center">
-                                        <input type="number" step="0.1" min="0" name="peso" placeholder="" className="w-full border border-purple-300 rounded p-2 text-sm focus:ring-2 focus:ring-purple-500 bg-white" value={formMascota.peso} onChange={handleMascotaChange} />
-                                        <span className="ml-2 text-sm text-gray-500 font-medium">kg</span>
-                                    </div>
+                                    {estaInhabilitado ? (
+                                        <div className="bg-red-50 text-red-700 p-2 rounded-lg text-sm font-bold border border-red-200 flex items-center justify-center">
+                                            ⚠️ Atención bloqueada: Paciente {mascotaSeleccionadaObj.estado}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1 text-left">Peso Actual (kg):</label>
+                                            <div className="flex items-center">
+                                                <input type="number" step="0.1" min="0" name="peso" placeholder="" className="w-full border border-purple-300 rounded p-2 text-sm focus:ring-2 focus:ring-purple-500 bg-white" value={formMascota.peso} onChange={handleMascotaChange} />
+                                                <span className="ml-2 text-sm text-gray-500 font-medium">kg</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -759,23 +926,42 @@ const generarCertificadoPDF = () => {
                             <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar" style={{maxHeight: '320px'}}>
                                 {inventarioFiltrado.map(prod => {
                                     const permiteDecimales = ['ml', 'lt', 'kg', 'g', 'mg'].includes(prod.unidad?.toLowerCase());
+                                    const isVencido = prod.estadoVencimiento === 'vencido';
+                                    const isPorVencer = prod.estadoVencimiento === 'por_vencer';
+                                    const isDisabled = prod.stock <= 0 || isVencido;
+
                                     return (
-                                        <label key={prod.id} className={`flex flex-col p-2 rounded border transition-colors ${insumosSeleccionados[prod.id] ? 'bg-white border-blue-300 shadow-sm' : 'border-transparent hover:bg-gray-100'}`}>
+                                        <label key={prod.id} className={`flex flex-col p-2 rounded border transition-colors ${insumosSeleccionados[prod.id] ? 'bg-white border-blue-300 shadow-sm' : 'border-transparent hover:bg-gray-100'} ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'} ${isPorVencer && !insumosSeleccionados[prod.id] ? 'bg-yellow-50/50 border-yellow-200' : ''}`}>
                                             <div className="flex items-center justify-between w-full">
                                                 <div className="flex items-center overflow-hidden flex-1">
                                                     <input 
                                                         type="checkbox" 
-                                                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-3 flex-shrink-0" 
+                                                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-3 flex-shrink-0 disabled:opacity-50" 
                                                         checked={!!insumosSeleccionados[prod.id]} 
                                                         onChange={() => {
+                                                            if (isDisabled) return;
                                                             if (insumosSeleccionados[prod.id]) toggleInsumo(prod);
                                                             else handleCantidadChange(prod.id, 1);
                                                         }} 
-                                                        disabled={prod.stock <= 0} 
+                                                        disabled={isDisabled} 
                                                     />
-                                                    <div className="truncate pr-2">
-                                                        <p className={`text-sm font-medium ${prod.stock <= 0 ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{prod.nombre}</p>
-                                                        <p className="text-xs text-gray-500">{prod.tipo} | Stock: {prod.stock}</p>
+                                                    <div className="truncate pr-2 w-full">
+                                                        <p className={`text-sm font-medium ${isDisabled ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{prod.nombre}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                            <span className="text-xs text-gray-500">{prod.tipo} | Stock: {prod.stock}</span>
+                                                            
+                                                            {isVencido && (
+                                                                <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold border border-red-200">
+                                                                    Vencido
+                                                                </span>
+                                                            )}
+                                                            
+                                                            {isPorVencer && (
+                                                                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold border border-yellow-200 flex items-center shadow-sm" title="Priorizar uso de este medicamento">
+                                                                    <AlertTriangle className="w-3 h-3 mr-1" /> Por vencer ({prod.diasVencimiento}d)
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -792,6 +978,7 @@ const generarCertificadoPDF = () => {
                                                         value={insumosSeleccionados[prod.id]}
                                                         onChange={(e) => handleCantidadChange(prod.id, e.target.value)}
                                                         onClick={(e) => e.stopPropagation()} 
+                                                        disabled={isVencido}
                                                     />
                                                     <span className="text-xs text-gray-500 ml-1 font-medium">{prod.unidad || 'uds'}</span>
                                                 </div>
@@ -810,8 +997,13 @@ const generarCertificadoPDF = () => {
                     </div>
 
                     <div className="flex justify-end">
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg flex items-center transition-all">
-                            <Save className="w-5 h-5 mr-2" /> Guardar Consulta
+                        <button 
+                            type="submit" 
+                            disabled={estaInhabilitado}
+                            className={`${estaInhabilitado ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white font-bold py-3 px-8 rounded-xl shadow-lg flex items-center transition-all`}
+                        >
+                            {estaInhabilitado ? <Lock className="w-5 h-5 mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+                            {estaInhabilitado ? 'Acción Bloqueada' : 'Guardar Consulta'}
                         </button>
                     </div>
                 </div>

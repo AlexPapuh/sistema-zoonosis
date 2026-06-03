@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  User, Mail, Lock, Phone, FileText, MapPin, 
-  ArrowLeft, CheckCircle2, X 
+    User, Mail, Lock, Phone, FileText, MapPin, 
+    ArrowLeft, CheckCircle2, X 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import authService from '../services/auth.service';
@@ -20,6 +20,33 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', nombre: 'Distrito 1: San Gerardo', lat: -19.585254, lng: -65.745972 },
+        { id: 'Distrito 2', nombre: 'Distrito 2: San Martín', lat: -19.587633, lng: -65.746918 },
+        { id: 'Distrito 3', nombre: 'Distrito 3: San Juan', lat: -19.590314, lng: -65.747041 },
+        { id: 'Distrito 4', nombre: 'Distrito 4: San Cristóbal', lat: -19.598222, lng: -65.742608 },
+        { id: 'Distrito 5', nombre: 'Distrito 5: San Roque', lat: -19.582477, lng: -65.752344 },
+        { id: 'Distrito 6', nombre: 'Distrito 6: Zona Central', lat: -19.587537, lng: -65.754547 },
+        { id: 'Distrito 7', nombre: 'Distrito 7: San Pedro', lat: -19.595141, lng: -65.752905 },
+        { id: 'Distrito 8', nombre: 'Distrito 8: San Benito', lat: -19.591430, lng: -65.757487 },
+        { id: 'Distrito 9', nombre: 'Distrito 9: Las Delicias', lat: -19.571709, lng: -65.759418 },
+        { id: 'Distrito 10', nombre: 'Distrito 10: Ciudad Satélite', lat: -19.572161, lng: -65.765592 },
+        { id: 'Distrito 11', nombre: 'Distrito 11: San Clemente', lat: -19.577416, lng: -65.763750 },
+        { id: 'Distrito 12', nombre: 'Distrito 12: Villa Copacabana', lat: -19.574175, lng: -65.772255 },
+        { id: 'Distrito 17', nombre: 'Distrito 17: Lecherías', lat: -19.557750, lng: -65.759351 },
+        { id: 'Distrito 19', nombre: 'Distrito 19: Universidad', lat: -19.556577, lng: -65.763539 },
+        { id: 'Distrito 20', nombre: 'Distrito 20: Cantumarca', lat: -19.585788, lng: -65.780453 },
+    ],
+    rurales: [
+        { id: 'Distrito 13', nombre: 'Distrito 13: Tarapaya', lat: -19.476637, lng: -65.798994 },
+        { id: 'Distrito 14', nombre: 'Distrito 14: Chullchucani', lat: -19.463732, lng: -65.637103 },
+        { id: 'Distrito 15', nombre: 'Distrito 15: Huari Huari', lat: -19.449177, lng: -65.595153 },
+        { id: 'Distrito 16', nombre: 'Distrito 16: Concepción (Rural)', lat: -19.639575, lng: -65.740161 },
+        { id: 'Distrito 18', nombre: 'Distrito 18: Manquiri', lat: -19.429259, lng: -65.718727 },
+    ]
+};
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -31,6 +58,7 @@ const RegisterPage = () => {
     email: '',
     password: '',
     telefono: '',
+    distrito: '', 
     direccion: '',
     latitud: -19.5894,
     longitud: -65.7541,
@@ -78,11 +106,31 @@ const RegisterPage = () => {
   }, [showMap]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    if (name === 'distrito') {
+        const distritoEncontrado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === value);
+        if (distritoEncontrado) {
+            setForm(prev => ({ ...prev, latitud: distritoEncontrado.lat, longitud: distritoEncontrado.lng }));
+            
+            if (mapInstance.current && markerRef.current) {
+                mapInstance.current.flyTo([distritoEncontrado.lat, distritoEncontrado.lng], 16, { duration: 1.2 });
+                markerRef.current.setLatLng([distritoEncontrado.lat, distritoEncontrado.lng]);
+            } else {
+                setShowMap(true);
+            }
+        }
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!form.distrito) {
+      return Swal.fire('Error', 'Por favor selecciona el distrito en el que vives.', 'warning');
+    }
+
     setLoading(true);
 
     try {
@@ -107,7 +155,6 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden p-8 border border-gray-100">
           
-
           <div className="flex justify-between items-center mb-6">
             <Link to="/" className="inline-flex items-center text-gray-400 hover:text-blue-600 transition-colors text-sm font-semibold group">
                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -173,11 +220,36 @@ const RegisterPage = () => {
                  </button>
                </div>
                
-               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Dirección Escrita</label>
+               <div className="mb-4">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">📍 Distrito al que perteneces</label>
+                  <select
+                      name="distrito"
+                      value={form.distrito}
+                      onChange={handleChange}
+                      required
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                  >
+                      <option value="" disabled>-- Selecciona tu distrito --</option>
+                      <optgroup label="🏢 Distritos Urbanos">
+                          {DISTRITOS_POTOSI.urbanos.map(dist => (
+                              <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                          ))}
+                      </optgroup>
+                      <optgroup label="🌲 Distritos Rurales">
+                          {DISTRITOS_POTOSI.rurales.map(dist => (
+                              <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                          ))}
+                      </optgroup>
+                  </select>
+                  <p className="text-[10px] text-gray-400 mt-1 ml-2">Necesario para asignarte campañas médicas correctas.</p>
+               </div>
+               
+               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Dirección Escrita (Calle/Zona)</label>
                <input 
                   type="text" 
                   name="direccion" 
                   required 
+                  placeholder="Ej. Calle Tarija, Barrio Central"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all mb-3" 
                   onChange={handleChange} 
                />

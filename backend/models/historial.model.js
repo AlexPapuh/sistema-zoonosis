@@ -11,6 +11,10 @@ class Historial {
             let finalPropietarioId = data.propietario_id;
             let credenciales = null;
 
+            const latFinal = data.latitudPropietario === '' ? null : data.latitudPropietario;
+            const lngFinal = data.longitudPropietario === '' ? null : data.longitudPropietario;
+            const distritoFinal = data.distritoPropietario || null; // <-- CAPTURAMOS EL DISTRITO
+
             if (!finalPropietarioId) {
                 const [existingUser] = await connection.query("SELECT id FROM usuarios WHERE email = ?", [data.emailPropietario]);
                 if (existingUser.length > 0) throw new Error("El correo ya está registrado.");
@@ -22,12 +26,19 @@ class Historial {
                 const [userResult] = await connection.query("INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'Propietario')", [data.nombrePropietario, data.emailPropietario, hashedPassword]);
                 const newUserId = userResult.insertId;
 
-                const latFinal = data.latitudPropietario === '' ? null : data.latitudPropietario;
-                const lngFinal = data.longitudPropietario === '' ? null : data.longitudPropietario;
-
-                const [propResult] = await connection.query("INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud) VALUES (?, ?, ?, ?, ?)", [newUserId, data.telefonoPropietario, data.direccionPropietario, latFinal, lngFinal]);
+                const [propResult] = await connection.query(
+                    "INSERT INTO propietarios (usuario_id, telefono, direccion, distrito, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?)", 
+                    [newUserId, data.telefonoPropietario, data.direccionPropietario, distritoFinal, latFinal, lngFinal]
+                );
                 finalPropietarioId = propResult.insertId;
                 credenciales = { email: data.emailPropietario, password_temporal: rawPassword };
+            } else {
+                if (latFinal || lngFinal || distritoFinal) {
+                    await connection.query(
+                        "UPDATE propietarios SET latitud = COALESCE(?, latitud), longitud = COALESCE(?, longitud), distrito = COALESCE(?, distrito) WHERE id = ?", 
+                        [latFinal, lngFinal, distritoFinal, finalPropietarioId]
+                    );
+                }
             }
 
             let finalAnimalId = data.animal_id;
@@ -55,7 +66,6 @@ class Historial {
                 }
             }
 
-
             if (data.esVacuna && data.fechaProxima) {
                 await connection.query(
                     `INSERT INTO animal_vacunas (animal_id, inventario_id, fecha_aplicacion, fecha_proxima_dosis, notificado, veterinario_id) VALUES (?, ?, NOW(), ?, 0, ?)`,
@@ -78,7 +88,8 @@ class Historial {
             connection.release(); 
         }
     }
-static async registrarAtencionCampana(data) {
+
+    static async registrarAtencionCampana(data) {
         const connection = await db.getConnection();
         await connection.beginTransaction();
         try {

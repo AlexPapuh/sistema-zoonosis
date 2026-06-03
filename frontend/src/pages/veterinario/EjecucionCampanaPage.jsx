@@ -22,6 +22,33 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', nombre: 'Distrito 1: San Gerardo', lat: -19.585254, lng: -65.745972 },
+        { id: 'Distrito 2', nombre: 'Distrito 2: San Martín', lat: -19.587633, lng: -65.746918 },
+        { id: 'Distrito 3', nombre: 'Distrito 3: San Juan', lat: -19.590314, lng: -65.747041 },
+        { id: 'Distrito 4', nombre: 'Distrito 4: San Cristóbal', lat: -19.598222, lng: -65.742608 },
+        { id: 'Distrito 5', nombre: 'Distrito 5: San Roque', lat: -19.582477, lng: -65.752344 },
+        { id: 'Distrito 6', nombre: 'Distrito 6: Zona Central', lat: -19.587537, lng: -65.754547 },
+        { id: 'Distrito 7', nombre: 'Distrito 7: San Pedro', lat: -19.595141, lng: -65.752905 },
+        { id: 'Distrito 8', nombre: 'Distrito 8: San Benito', lat: -19.591430, lng: -65.757487 },
+        { id: 'Distrito 9', nombre: 'Distrito 9: Las Delicias', lat: -19.571709, lng: -65.759418 },
+        { id: 'Distrito 10', nombre: 'Distrito 10: Ciudad Satélite', lat: -19.572161, lng: -65.765592 },
+        { id: 'Distrito 11', nombre: 'Distrito 11: San Clemente', lat: -19.577416, lng: -65.763750 },
+        { id: 'Distrito 12', nombre: 'Distrito 12: Villa Copacabana', lat: -19.574175, lng: -65.772255 },
+        { id: 'Distrito 17', nombre: 'Distrito 17: Lecherías', lat: -19.557750, lng: -65.759351 },
+        { id: 'Distrito 19', nombre: 'Distrito 19: Universidad', lat: -19.556577, lng: -65.763539 },
+        { id: 'Distrito 20', nombre: 'Distrito 20: Cantumarca', lat: -19.585788, lng: -65.780453 },
+    ],
+    rurales: [
+        { id: 'Distrito 13', nombre: 'Distrito 13: Tarapaya', lat: -19.476637, lng: -65.798994 },
+        { id: 'Distrito 14', nombre: 'Distrito 14: Chullchucani', lat: -19.463732, lng: -65.637103 },
+        { id: 'Distrito 15', nombre: 'Distrito 15: Huari Huari', lat: -19.449177, lng: -65.595153 },
+        { id: 'Distrito 16', nombre: 'Distrito 16: Concepción (Rural)', lat: -19.639575, lng: -65.740161 },
+        { id: 'Distrito 18', nombre: 'Distrito 18: Manquiri', lat: -19.429259, lng: -65.718727 },
+    ]
+};
+
 const razasPerro = ["Mestizo", "Labrador", "Pastor Alemán", "Husky", "Golden Retriever", "Chihuahua", "Bulldog", "Poodle", "Otro"];
 const razasGato = ["Mestizo", "Persa", "Siamés", "Angora", "Maine Coon", "Sphynx", "Otro"];
 
@@ -49,6 +76,16 @@ const MapFix = () => {
         }, 400);
         return () => clearTimeout(timer);
     }, [map]);
+    return null;
+};
+
+const ChangeMapView = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 16, { duration: 1.2 });
+        }
+    }, [center, map]);
     return null;
 };
 
@@ -86,8 +123,11 @@ const EjecucionCampanaPage = () => {
   
   const [inscripcionId, setInscripcionId] = useState(null);
 
+  const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
+
   const [form, setForm] = useState({
-      nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '',
+      nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', 
+      distritoPropietario: '', 
       latitudPropietario: '', longitudPropietario: '',
       nombreMascota: '', especie: 'Perro', sexo: 'Macho', raza: '', otraEspecie: '', fechaNacimiento: '',
       peso: '', cantidad: '1'
@@ -136,11 +176,16 @@ const EjecucionCampanaPage = () => {
                   nombrePropietario: datos.nombre || '',
                   telefonoPropietario: datos.telefono || '',
                   direccionPropietario: datos.direccion || '',
+                  distritoPropietario: datos.distrito || '', 
                   latitudPropietario: datos.latitud || '',
                   longitudPropietario: datos.longitud || '',
                   emailPropietario: '' 
               }));
               
+              if (datos.latitud && datos.longitud) {
+                  setMapaCentro([datos.latitud, datos.longitud]);
+              }
+
               Swal.fire({
                   toast: true, position: 'top-end', icon: 'info', 
                   title: 'Datos de invitado cargados', showConfirmButton: false, timer: 3000 
@@ -173,7 +218,7 @@ const EjecucionCampanaPage = () => {
           setPacienteSeleccionadoId('nuevo');
           setForm(prev => ({
               ...prev, 
-              nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '',
+              nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
               latitudPropietario: '', longitudPropietario: ''
           }));
       } catch (error) { console.error(error); }
@@ -185,7 +230,7 @@ const EjecucionCampanaPage = () => {
       setPacienteSeleccionadoId('nuevo');
       setForm({ 
           ...form,
-          nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '',
+          nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
           latitudPropietario: '', longitudPropietario: ''
       });
   };
@@ -198,8 +243,17 @@ const EjecucionCampanaPage = () => {
       if ((name === 'peso' || name === 'cantidad') && parseFloat(value) < 0) {
           return Swal.fire({ icon: 'error', title: 'Valor incorrecto', text: 'No negativos.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
       }
-      setForm({ ...form, [name]: value });
+      
+      setForm(prev => ({ ...prev, [name]: value }));
+      
       if (name === 'especie') setForm(prev => ({ ...prev, especie: value, raza: '', otraEspecie: '' }));
+
+      if (name === 'distritoPropietario') {
+          const distritoEncontrado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === value);
+          if (distritoEncontrado) {
+              setMapaCentro([distritoEncontrado.lat, distritoEncontrado.lng]);
+          }
+      }
   };
 
   const handlePacienteSelect = (e) => {
@@ -224,9 +278,12 @@ const handleRegistrarAtencion = async (e) => {
       
       if (!hayStock) return Swal.fire('Sin Stock', 'No tienes dosis disponibles.', 'error');
 
-      const esNuevoProp = !propietarioSeleccionado;
       const esNuevaMascota = pacienteSeleccionadoId === 'nuevo';
       
+      if (!propietarioSeleccionado && !form.distritoPropietario) {
+          return Swal.fire('Falta Distrito', 'Debes seleccionar el distrito del nuevo propietario.', 'warning');
+      }
+
       if (!form.peso) {
         const result = await Swal.fire({ title: '¿Falta el Peso?', text: "Deseas continuar?", icon: 'question', showCancelButton: true, confirmButtonText: 'Sí' });
         if (!result.isConfirmed) return;
@@ -329,6 +386,15 @@ const handleRegistrarAtencion = async (e) => {
 
   if (loading) return <div className="p-8 text-center">Cargando...</div>;
 
+  // --- LÓGICA DE BLOQUEO DE ATENCIÓN PARA PACIENTES CON DECESO/PÉRDIDA ---
+  const mascotaSeleccionadaObj = pacienteSeleccionadoId && pacienteSeleccionadoId !== 'nuevo' 
+      ? mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId) 
+      : null;
+
+  const estaInhabilitado = mascotaSeleccionadaObj?.estado && 
+      (mascotaSeleccionadaObj.estado.toLowerCase().includes('deceso') || 
+       mascotaSeleccionadaObj.estado.toLowerCase().includes('perdid'));
+
   return (
     <div className="container mx-auto p-4 pb-20">
         <button onClick={() => navigate('/gestion/campanas')} className="flex items-center text-gray-500 mb-4 hover:text-gray-700">
@@ -362,7 +428,7 @@ const handleRegistrarAtencion = async (e) => {
                 {!propietarioSeleccionado && (
                     <div className="mb-8 relative">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Buscar Propietario Existente</label>
-                        <div className="flex"><div className="relative flex-1"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400"/></div><input type="text" className="block w-full pl-10 border-gray-300 rounded-lg p-3 bg-gray-50" placeholder="Buscar por nombre..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} disabled={!hayStock} /></div></div>
+                        <div className="flex"><div className="relative flex-1"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400"/></div><input type="text" className="block w-full pl-10 border-gray-300 rounded-lg p-3 bg-gray-50" placeholder="Buscar por nombre o teléfono..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} disabled={!hayStock} /></div></div>
                         {resultadosBusqueda.length > 0 && (<div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">{resultadosBusqueda.map(prop => (<div key={prop.id} onClick={() => seleccionarPropietario(prop)} className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between"><span className="font-medium text-gray-800">{prop.nombre}</span><span className="text-sm text-gray-500">{prop.telefono}</span></div>))}</div>)}
                     </div>
                 )}
@@ -390,15 +456,37 @@ const handleRegistrarAtencion = async (e) => {
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label><input type="text" name="telefonoPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.telefonoPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="emailPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.emailPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                                    <input type="text" name="direccionPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.direccionPropietario} onChange={handleInputChange} disabled={!hayStock} />
+                                <div className="grid grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 text-blue-600">Distrito</label>
+                                        <select 
+                                            name="distritoPropietario" 
+                                            className="block w-full border-gray-300 rounded-lg p-3 bg-white cursor-pointer" 
+                                            value={form.distritoPropietario || ""} 
+                                            onChange={handleInputChange} 
+                                            required
+                                            disabled={!hayStock}
+                                        >
+                                            <option value="" disabled>-- Seleccionar --</option>
+                                            <optgroup label="🏢 Urbanos">
+                                                {DISTRITOS_POTOSI.urbanos.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                                            </optgroup>
+                                            <optgroup label="🌲 Rurales">
+                                                {DISTRITOS_POTOSI.rurales.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Dirección/Zona</label>
+                                        <input type="text" name="direccionPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.direccionPropietario} onChange={handleInputChange} disabled={!hayStock} />
+                                    </div>
                                 </div>
                                 
                                 <div className="mt-2 h-48 w-full rounded-lg overflow-hidden border border-gray-300 relative z-0">
-                                    <MapContainer center={[-19.5894, -65.7541]} zoom={15} style={{ height: "100%", width: "100%" }}>
+                                    <MapContainer center={mapaCentro} zoom={15} style={{ height: "100%", width: "100%" }}>
                                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
                                         <MapFix />
+                                        <ChangeMapView center={mapaCentro} />
                                         <LocationMarker
                                             position={form.latitudPropietario ? { lat: form.latitudPropietario, lng: form.longitudPropietario } : null}
                                             setPosition={(pos) => setForm(prev => ({ ...prev, latitudPropietario: pos.lat, longitudPropietario: pos.lng }))}
@@ -423,9 +511,16 @@ const handleRegistrarAtencion = async (e) => {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Seleccionar Paciente</label>
                                 <select className="block w-full border-gray-300 rounded-lg p-3 bg-white focus:ring-2 focus:ring-purple-500 transition-all" value={pacienteSeleccionadoId} onChange={handlePacienteSelect} disabled={!hayStock}>
                                     <option value="nuevo">+ Registrar Nueva Mascota</option>
-                                    {mascotasDelPropietario.map(m => (
-                                        <option key={m.id} value={m.id}>{m.nombre} ({m.especie} - {m.raza})</option>
-                                    ))}
+                                    {mascotasDelPropietario.map(m => {
+                                        const estadoEspecial = (m.estado && (m.estado.toLowerCase().includes('deceso') || m.estado.toLowerCase().includes('perdid'))) 
+                                            ? ` - [${m.estado.toUpperCase()}]` 
+                                            : '';
+                                        return (
+                                            <option key={m.id} value={m.id}>
+                                                {m.nombre} ({m.especie} - {m.raza}{estadoEspecial})
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             </div>
                         )}
@@ -454,10 +549,36 @@ const handleRegistrarAtencion = async (e) => {
                         {propietarioSeleccionado && pacienteSeleccionadoId !== 'nuevo' && (
                             <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 text-center">
                                 <p className="text-purple-800 font-bold">Paciente Seleccionado</p>
-                                <p className="text-2xl font-bold text-purple-900">{mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.nombre}</p>
-                                <div className="mt-3 pt-3 border-t border-purple-200 grid grid-cols-2 gap-4 text-left">
-                                     <div><label className="block text-xs font-bold text-gray-600 mb-1">Peso Actual (kg)</label><input type="number" step="0.1" min="0" name="peso" placeholder="Ej: 12" className="w-full border-gray-300 rounded p-2 text-sm" value={form.peso} onChange={handleInputChange} disabled={!hayStock} /></div>
-                                     <div><label className="block text-xs font-bold text-blue-700 mb-1">Dosis</label><input type="number" step="0.1" min="0.1" name="cantidad" className={`w-full border-blue-300 rounded p-2 text-sm font-bold text-blue-900 ${isAntirrabica ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`} value={isAntirrabica ? '1' : form.cantidad} onChange={handleInputChange} readOnly={isAntirrabica} disabled={!hayStock} /></div>
+                                
+                                <div className="flex items-center justify-center gap-2 mt-1">
+                                    <p className="text-2xl font-bold text-purple-900">
+                                        {mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId)?.nombre}
+                                    </p>
+                                    
+                                    {(() => {
+                                        const mascota = mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId);
+                                        if (mascota?.estado && (mascota.estado.toLowerCase().includes('deceso') || mascota.estado.toLowerCase().includes('perdid'))) {
+                                            return (
+                                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase tracking-wider ${mascota.estado.toLowerCase().includes('deceso') ? 'bg-gray-800 text-gray-100' : 'bg-red-500 text-white'}`}>
+                                                    {mascota.estado}
+                                                </span>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
+
+                                <div className="mt-3 pt-3 border-t border-purple-200 text-left">
+                                    {estaInhabilitado ? (
+                                        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm font-bold border border-red-200 text-center flex justify-center items-center">
+                                            <AlertOctagon className="w-5 h-5 mr-2" /> Atención bloqueada ({mascotaSeleccionadaObj.estado})
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                             <div><label className="block text-xs font-bold text-gray-600 mb-1">Peso Actual (kg)</label><input type="number" step="0.1" min="0" name="peso" placeholder="Ej: 12" className="w-full border-gray-300 rounded p-2 text-sm" value={form.peso} onChange={handleInputChange} disabled={!hayStock} /></div>
+                                             <div><label className="block text-xs font-bold text-blue-700 mb-1">Dosis</label><input type="number" step="0.1" min="0.1" name="cantidad" className={`w-full border-blue-300 rounded p-2 text-sm font-bold text-blue-900 ${isAntirrabica ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`} value={isAntirrabica ? '1' : form.cantidad} onChange={handleInputChange} readOnly={isAntirrabica} disabled={!hayStock} /></div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -472,12 +593,12 @@ const handleRegistrarAtencion = async (e) => {
                         )}
                         <button 
                             type="submit" 
-                            disabled={!hayStock}
+                            disabled={!hayStock || estaInhabilitado}
                             className={`flex-[2] flex justify-center items-center py-4 px-8 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white transition-all focus:outline-none focus:ring-4 pointer-events-auto 
-                            ${!hayStock ? 'bg-gray-400 cursor-not-allowed opacity-100' : 'bg-green-600 hover:bg-green-700 hover:scale-105 focus:ring-green-300'}`}
+                            ${(!hayStock || estaInhabilitado) ? 'bg-gray-400 cursor-not-allowed opacity-100' : 'bg-green-600 hover:bg-green-700 hover:scale-105 focus:ring-green-300'}`}
                         >
-                            {hayStock ? <Save className="w-6 h-6 mr-2" /> : <Lock className="w-6 h-6 mr-2" />}
-                            {hayStock ? 'Registrar Vacunación' : 'Sin Stock'}
+                            {hayStock && !estaInhabilitado ? <Save className="w-6 h-6 mr-2" /> : <Lock className="w-6 h-6 mr-2" />}
+                            {estaInhabilitado ? 'Paciente Inhabilitado' : (hayStock ? 'Registrar Vacunación' : 'Sin Stock')}
                         </button>
                     </div>
                 </form>

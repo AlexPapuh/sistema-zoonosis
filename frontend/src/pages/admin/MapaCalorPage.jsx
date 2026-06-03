@@ -15,7 +15,6 @@ const MapFix = () => {
     return null;
 };
 
-// --- COMPONENTE HEATMAP ---
 const HeatmapLayer = ({ points, config }) => {
     const map = useMap();
 
@@ -46,28 +45,20 @@ const HeatmapLayer = ({ points, config }) => {
 const MapaCalorPage = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    
-    // Datos
     const [mascotasPoints, setMascotasPoints] = useState([]);
     const [casosRaw, setCasosRaw] = useState([]);
     const [tiposDisponibles, setTiposDisponibles] = useState([]);
-
-    // Filtros
-    const [verMascotas, setVerMascotas] = useState(true);
     const [filtroCaso, setFiltroCaso] = useState('todos');
-
     
     const gradienteMascotas = { 
-        gradient: { 0.3: '#a5b4fc', 0.6: '#6366f1', 1.0: '#312e81' } 
+        gradient: { 0.3: '#3b82f6', 0.6: '#1d4ed8', 1.0: '#1e3a8a' } 
     }; 
 
     const coloresPorTipo = {
-        'Zoonosis': { 0.4: 'orange', 1.0: 'red' },       
-        'Mordedura': { 0.4: 'orange', 1.0: 'red' },      
-        'Perdido': { 0.4: '#fde047', 1.0: '#ca8a04' },   
-        'Encontrada': { 0.4: '#86efac', 1.0: '#16a34a'}, 
-        'Abandono': { 0.4: '#f472b6', 1.0: '#db2777' },  
-        'default': { 0.4: '#fca5a5', 1.0: '#b91c1c' }    
+        'Zoonosis': { 0.4: '#fdba74', 1.0: '#ea580c' },      
+        'Perdido': { 0.4: '#fca5a5', 1.0: '#dc2626' },       
+        'Encontrada': { 0.4: '#86efac', 1.0: '#16a34a'},     
+        'default': { 0.4: '#a1a1aa', 1.0: '#52525b' }        
     };
 
     useEffect(() => {
@@ -76,10 +67,8 @@ const MapaCalorPage = () => {
                 const res = await reporteService.getMapaCalor();
                 setMascotasPoints(res.heatMascotas);
                 setCasosRaw(res.rawCasos);
-
                 const unicos = [...new Set(res.rawCasos.map(c => c.tipo))];
                 setTiposDisponibles(unicos);
-
             } catch (error) {
                 console.error(error);
             } finally {
@@ -90,15 +79,17 @@ const MapaCalorPage = () => {
     }, []);
 
     const getPuntosPorTipo = (tipo) => {
-        return casosRaw
-            .filter(c => c.tipo === tipo)
-            .map(c => [c.lat, c.lng, 1.0]); 
+        return casosRaw.filter(c => c.tipo === tipo).map(c => [c.lat, c.lng, 1.0]); 
     };
+
+    const f = filtroCaso.toLowerCase();
+    const showZoonosis = f === 'todos' || f === 'solo_casos' || f.includes('zoonosis') || f.includes('mordedura');
+    const showPerdido = f === 'todos' || f === 'solo_casos' || f.includes('perdid');
+    const showEncontrada = f === 'todos' || f === 'solo_casos' || f.includes('encontrad');
 
     return (
         <div className="container mx-auto h-[calc(100vh-80px)] flex flex-col p-6 space-y-4">
             
-            {/* --- ENCABEZADO --- */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate('/admin/reportes')} className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
@@ -112,55 +103,43 @@ const MapaCalorPage = () => {
                     </div>
                 </div>
 
-                {/* FILTROS */}
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    
-                    <button 
-                        onClick={() => setVerMascotas(!verMascotas)}
-                        className={`flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold transition-all border ${
-                            verMascotas 
-                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 ring-1 ring-indigo-200' 
-                            : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
-                        }`}
-                    >
-                        <Dog className="w-4 h-4 mr-2"/> 
-                        {verMascotas ? 'Ocultar Población' : 'Ver Población'}
-                    </button>
-
-                    <div className="hidden sm:block w-px h-8 bg-gray-200 mx-1"></div>
-
-                    <div className="relative">
+                    <div className="relative w-full sm:w-72">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <AlertTriangle className={`h-4 w-4 ${filtroCaso !== 'todos' ? 'text-orange-500' : 'text-gray-400'}`} />
+                            <Layers className={`h-4 w-4 ${filtroCaso !== 'todos' && filtroCaso !== 'poblacion' ? 'text-orange-500' : 'text-blue-600'}`} />
                         </div>
                         <select
                             value={filtroCaso}
                             onChange={(e) => setFiltroCaso(e.target.value)}
-                            className="block w-full pl-10 pr-10 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm appearance-none cursor-pointer hover:bg-gray-50 transition-colors"
+                            className="block w-full pl-10 pr-10 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-sm appearance-none cursor-pointer hover:bg-gray-50 transition-colors"
                         >
-                            <option value="todos">Todos los Casos</option>
-                            {tiposDisponibles.map(tipo => (
-                                <option key={tipo} value={tipo}>{tipo}</option>
-                            ))}
+                            <option value="todos">🌍 Población + Todos los Casos</option>
+                            <option value="poblacion">🐕 Solo Población</option>
+                            <option value="solo_casos">⚠️ Solo Casos (Todos)</option>
+                            
+                            <optgroup label="Filtrar por Caso Específico">
+                                {tiposDisponibles.map(tipo => {
+                                    if(tipo.toLowerCase() === 'abandono') return null;
+                                    return <option key={tipo} value={tipo}>Caso: {tipo}</option>
+                                })}
+                            </optgroup>
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                             <ChevronDown className="h-4 w-4 text-gray-400" />
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            {/* --- MAPA --- */}
             <div className="flex-1 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden relative z-0">
                 {loading && (
                     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-                        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
                         <p className="text-lg font-bold text-gray-600">Analizando datos...</p>
                     </div>
                 )}
                 
-                <MapContainer center={[-19.5894, -65.7541]} zoom={13} style={{ height: "100%", width: "100%" }}>
+                <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: "100%", width: "100%" }}>
                     <MapFix /> 
                     
                     <TileLayer
@@ -168,20 +147,19 @@ const MapaCalorPage = () => {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                     
-                    {/* CAPA 1: MASCOTAS (VIOLETA/INDIGO) */}
-                    {verMascotas && mascotasPoints.length > 0 && (
+                    {(filtroCaso === 'todos' || filtroCaso === 'poblacion') && mascotasPoints.length > 0 && (
                         <HeatmapLayer points={mascotasPoints} config={gradienteMascotas} />
                     )}
 
-                    {/* CAPAS DINÁMICAS DE CASOS */}
                     {tiposDisponibles.map(tipo => {
-                        if (filtroCaso !== 'todos' && filtroCaso !== tipo) return null;
+                        const t = tipo.toLowerCase();
+                        if (t === 'abandono') return null;
+                        if (filtroCaso !== 'todos' && filtroCaso !== 'solo_casos' && filtroCaso !== tipo) return null;
 
                         let gradiente = coloresPorTipo['default'];
-                        if (tipo.includes('Perdido')) gradiente = coloresPorTipo['Perdido'];
-                        else if (tipo.includes('Encontrada')) gradiente = coloresPorTipo['Encontrada'];
-                        else if (tipo.includes('Abandono')) gradiente = coloresPorTipo['Abandono'];
-                        else if (tipo.includes('Zoonosis') || tipo.includes('Mordedura')) gradiente = coloresPorTipo['Zoonosis'];
+                        if (t.includes('perdid')) gradiente = coloresPorTipo['Perdido'];
+                        else if (t.includes('encontrad')) gradiente = coloresPorTipo['Encontrada'];
+                        else if (t.includes('zoonosis') || t.includes('mordedura')) gradiente = coloresPorTipo['Zoonosis'];
 
                         return (
                             <HeatmapLayer 
@@ -194,26 +172,54 @@ const MapaCalorPage = () => {
 
                 </MapContainer>
 
-                {/* LEYENDA FLOTANTE */}
-                <div className="absolute bottom-6 left-6 z-[400] bg-white/95 backdrop-blur p-4 rounded-xl shadow-lg border border-gray-100 w-60">
-                    <h4 className="font-bold text-gray-700 text-xs uppercase mb-3 flex items-center"><Filter className="w-3 h-3 mr-1"/> Intensidad</h4>
+                <div className="absolute bottom-6 left-6 z-[400] bg-white/95 backdrop-blur p-4 rounded-xl shadow-lg border border-gray-100 w-64 animate-fade-in">
+                    <h4 className="font-bold text-gray-800 text-xs uppercase mb-3 flex items-center">
+                        <Info className="w-4 h-4 mr-1.5 text-blue-600"/> Guía de Colores
+                    </h4>
                     
-                    {verMascotas && (
-                        <div className="mb-4">
-                            <div className="flex justify-between text-[10px] text-gray-500 mb-1"><span>Poca</span><span className="text-indigo-700 font-bold">Población</span><span>Mucha</span></div>
-                            <div className="h-2 rounded-full bg-gradient-to-r from-indigo-200 via-indigo-500 to-indigo-900"></div>
+                    {(filtroCaso === 'todos' || filtroCaso === 'poblacion') && (
+                        <div className={`mb-3 pb-3 ${filtroCaso === 'todos' ? 'border-b border-gray-200' : ''}`}>
+                            <div className="flex items-center text-xs font-bold text-gray-700 mb-1.5">
+                                <span className="w-3.5 h-3.5 rounded-full bg-blue-600 mr-2 shadow-sm border border-blue-800"></span>
+                                Población de Mascotas
+                            </div>
+                            <div className="flex justify-between text-[9px] text-gray-500 mt-1 pl-6"><span>Concentración Baja</span><span>Alta</span></div>
+                            <div className="h-1.5 ml-6 rounded-full bg-gradient-to-r from-blue-400 via-blue-600 to-blue-900"></div>
                         </div>
                     )}
 
-                    {(filtroCaso === 'todos' || filtroCaso) && (
-                        <div>
-                            <div className="flex justify-between text-[10px] text-gray-500 mb-1"><span>Aislado</span><span className="text-red-600 font-bold">Alertas</span><span>Foco</span></div>
-                            <div className="h-2 rounded-full bg-gradient-to-r from-yellow-300 via-orange-500 to-red-600"></div>
+                    {filtroCaso !== 'poblacion' && (
+                        <div className="space-y-3">
+                            {showZoonosis && (
+                                <div>
+                                    <div className="flex items-center text-xs font-bold text-gray-700 mb-1.5">
+                                        <span className="w-3.5 h-3.5 rounded-full bg-orange-500 mr-2 shadow-sm border border-orange-700"></span>
+                                        Zoonosis / Mordedura
+                                    </div>
+                                    <div className="flex justify-between text-[9px] text-gray-500 pl-6 mb-1"><span>Aislado</span><span>Foco Crítico</span></div>
+                                    <div className="h-1.5 ml-6 rounded-full bg-gradient-to-r from-orange-200 via-orange-500 to-orange-800"></div>
+                                </div>
+                            )}
                             
-                            {filtroCaso === 'todos' && (
-                                <div className="mt-2 grid grid-cols-2 gap-1 text-[9px] text-gray-500">
-                                    <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span>Peligro</span>
-                                    <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Perdidos</span>
+                            {showPerdido && (
+                                <div>
+                                    <div className="flex items-center text-xs font-bold text-gray-700 mb-1.5">
+                                        <span className="w-3.5 h-3.5 rounded-full bg-red-600 mr-2 shadow-sm border border-red-800"></span>
+                                        Mascota Perdida
+                                    </div>
+                                    <div className="flex justify-between text-[9px] text-gray-500 pl-6 mb-1"><span>Aislado</span><span>Foco Crítico</span></div>
+                                    <div className="h-1.5 ml-6 rounded-full bg-gradient-to-r from-red-300 via-red-500 to-red-900"></div>
+                                </div>
+                            )}
+
+                            {showEncontrada && (
+                                <div>
+                                    <div className="flex items-center text-xs font-bold text-gray-700 mb-1.5">
+                                        <span className="w-3.5 h-3.5 rounded-full bg-green-500 mr-2 shadow-sm border border-green-700"></span>
+                                        Mascota Encontrada
+                                    </div>
+                                    <div className="flex justify-between text-[9px] text-gray-500 pl-6 mb-1"><span>Aislado</span><span>Foco Crítico</span></div>
+                                    <div className="h-1.5 ml-6 rounded-full bg-gradient-to-r from-green-200 via-green-500 to-green-800"></div>
                                 </div>
                             )}
                         </div>

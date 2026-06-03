@@ -3,7 +3,7 @@ const db = require('../config/db');
 const { enviarMensaje } = require('../services/whatsappClient');
 
 const iniciarTareasProgramadas = () => {
-    cron.schedule('0 8 * * *', async () => { 
+    cron.schedule('* * * * *', async () => { 
         console.log('--- ⏰ EJECUTANDO RECORDATORIOS DIARIOS (8:00 AM) ---');
         
         try {
@@ -22,7 +22,7 @@ const iniciarTareasProgramadas = () => {
                 JOIN inventario i ON av.inventario_id = i.id
                 WHERE 
                     -- 📅 AVISO: 1 día antes del vencimiento
-                    DATEDIFF(av.fecha_proxima_dosis, CURDATE()) = 1
+                    DATEDIFF(av.fecha_proxima_dosis, CURDATE()) = 15
                     AND av.notificado = 0
             `);
 
@@ -36,7 +36,7 @@ const iniciarTareasProgramadas = () => {
                         const enviado = await enviarMensaje(registro.telefono, mensaje);
                         
                         if (enviado) {
-                            await db.query('UPDATE animal_vacunas SET notificado = 1 WHERE id = ?', [registro.id]);
+                            await db.query('UPDATE animal_vacunas SET notificado = 15 WHERE id = ?', [registro.id]);
                             console.log(`📨 Enviado a ${registro.propietario}`);
                         }
                     }

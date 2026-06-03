@@ -22,6 +22,33 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', nombre: 'Distrito 1: San Gerardo' },
+        { id: 'Distrito 2', nombre: 'Distrito 2: San Martín' },
+        { id: 'Distrito 3', nombre: 'Distrito 3: San Juan' },
+        { id: 'Distrito 4', nombre: 'Distrito 4: San Cristóbal' },
+        { id: 'Distrito 5', nombre: 'Distrito 5: San Roque' },
+        { id: 'Distrito 6', nombre: 'Distrito 6: Zona Central' },
+        { id: 'Distrito 7', nombre: 'Distrito 7: San Pedro' },
+        { id: 'Distrito 8', nombre: 'Distrito 8: San Benito' },
+        { id: 'Distrito 9', nombre: 'Distrito 9: Las Delicias' },
+        { id: 'Distrito 10', nombre: 'Distrito 10: Ciudad Satélite' },
+        { id: 'Distrito 11', nombre: 'Distrito 11: San Clemente' },
+        { id: 'Distrito 12', nombre: 'Distrito 12: Villa Copacabana' },
+        { id: 'Distrito 17', nombre: 'Distrito 17: Lecherías' },
+        { id: 'Distrito 19', nombre: 'Distrito 19: Universidad' },
+        { id: 'Distrito 20', nombre: 'Distrito 20: Cantumarca' },
+    ],
+    rurales: [
+        { id: 'Distrito 13', nombre: 'Distrito 13: Tarapaya' },
+        { id: 'Distrito 14', nombre: 'Distrito 14: Chullchucani' },
+        { id: 'Distrito 15', nombre: 'Distrito 15: Huari Huari' },
+        { id: 'Distrito 16', nombre: 'Distrito 16: Concepción (Rural)' },
+        { id: 'Distrito 18', nombre: 'Distrito 18: Manquiri' },
+    ]
+};
+
 const MapFix = () => {
     const map = useMap();
     useEffect(() => {
@@ -51,7 +78,7 @@ const formatFechaSimple = (isoString) => {
 
 const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
     const [formData, setFormData] = useState({
-        nombre: '', ci: '', celular: '', direccion: '', cantidad: 1, detalles_animal: '' 
+        nombre: '', ci: '', celular: '', direccion: '', distrito: '', cantidad: 1, detalles_animal: '' 
     });
     
     const [position, setPosition] = useState(
@@ -62,8 +89,8 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.nombre || !formData.ci || !formData.celular) {
-            return Swal.fire('Atención', 'Nombre, Carnet y Celular son obligatorios.', 'warning');
+        if (!formData.nombre || !formData.ci || !formData.celular || !formData.distrito) {
+            return Swal.fire('Atención', 'Nombre, Carnet, Celular y Distrito son campos obligatorios.', 'warning');
         }
         onConfirm({ ...formData, latitud: position.lat, longitud: position.lng });
     };
@@ -95,7 +122,7 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
                     </div>
                 </div>
 
-                <div className="lg:w-1/3 w-full p-6 flex flex-col justify-start bg-gray-50 overflow-y-auto">
+                <div className="lg:w-1/3 w-full p-6 flex flex-col justify-start bg-gray-50 overflow-y-auto custom-scrollbar">
                     <div className="mb-6 flex-shrink-0">
                         <h3 className="text-lg font-bold text-gray-800 mb-1">{campana.nombre}</h3>
                         <p className="text-sm text-gray-500">Llena tus datos para la visita.</p>
@@ -136,6 +163,28 @@ const PanelInscripcionInvitado = ({ campana, onCancel, onConfirm }) => {
                             <input type="number" min="1" max="20" className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                                 value={formData.cantidad} onChange={e => setFormData({...formData, cantidad: e.target.value})}
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 uppercase mb-1 text-blue-600">Distrito (Obligatorio)</label>
+                            <select 
+                                required 
+                                className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                                value={formData.distrito} 
+                                onChange={e => setFormData({...formData, distrito: e.target.value})}
+                            >
+                                <option value="" disabled>-- Selecciona tu distrito --</option>
+                                <optgroup label="🏢 Distritos Urbanos">
+                                    {DISTRITOS_POTOSI.urbanos.map(dist => (
+                                        <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="🌲 Distritos Rurales">
+                                    {DISTRITOS_POTOSI.rurales.map(dist => (
+                                        <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
                         </div>
 
                         <div>
@@ -217,7 +266,7 @@ const PublicCampanasPage = () => {
           });
           setModoInscripcion(null);
       } catch (error) {
-          Swal.fire('Error', error.response?.data?.message || 'Error', 'error');
+          Swal.fire('Atención', error.response?.data?.message || 'Error al inscribirse', 'error');
       }
   };
 

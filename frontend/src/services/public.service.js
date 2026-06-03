@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/public';
+const API_URL = 'http://2.25.170.83:5000/api/public';
 
 const getServicios = async () => {
     try {

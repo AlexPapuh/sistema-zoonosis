@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './auth.service.js';
 
-const API_URL = 'http://localhost:5000/api/usuarios';
+const API_URL = 'http://2.25.170.83:5000/api/usuarios';
 
 const authHeader = () => {
   const storedData = authService.getCurrentUser();
@@ -47,6 +47,10 @@ const deleteUser = async (id) => {
         throw error.response?.data || error;
     }
 };
+const reactivateUser = async (id) => {
+    const response = await axios.put(`${API_URL}/${id}/reactivar`, {}, { headers: authHeader() });
+    return response.data;
+};
 const toggleEstado = async (id) => {
   let token = localStorage.getItem('token');
   
@@ -59,11 +63,13 @@ const toggleEstado = async (id) => {
   
   return response.data;
 };
+
 const userService = {
   getAllUsers,
   createUser, 
   updateUser,
   deleteUser,
+  reactivateUser,
   toggleEstado
 };
 

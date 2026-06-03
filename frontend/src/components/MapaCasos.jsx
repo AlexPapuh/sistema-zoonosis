@@ -11,7 +11,6 @@ const getIcon = (color) => new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Componente para capturar clics en el mapa
 const LocationMarker = ({ onLocationSelected, isSelecting }) => {
     useMapEvents({
         click(e) {
@@ -38,7 +37,6 @@ const MapaCasos = ({ casos = [], onMapClick, isSelectingMode, tempMarker }) => {
       {tempMarker && <Marker position={tempMarker} icon={getIcon('gold')} />}
 
       {casos.map((caso) => {
-          // Definir color según tipo
           let color = 'blue';
           if (caso.tipo === 'Mascota Perdida') color = 'red';
           if (caso.tipo === 'Mascota Encontrada') color = 'green';

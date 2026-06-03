@@ -9,7 +9,7 @@ exports.createCampana = async (req, res) => {
   try {
     const { 
       nombre, descripcion, fecha_inicio, fecha_fin, tipo, 
-      latitud, longitud, 
+      latitud, longitud, distrito, detalles_zona, 
       inventario_id, 
       asignaciones 
     } = req.body;
@@ -41,8 +41,8 @@ exports.createCampana = async (req, res) => {
     }
     
     const [campRes] = await connection.query(
-      'INSERT INTO campanas (nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, inventario_id, stock_asignado, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, inventario_id, stockTotalRequerido, 'Planificada']
+      'INSERT INTO campanas (nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, distrito, detalles_zona, inventario_id, stock_asignado, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud || null, longitud || null, distrito || null, detalles_zona || null, inventario_id, stockTotalRequerido, 'Planificada']
     );
     const campanaId = campRes.insertId;
 
@@ -120,13 +120,13 @@ exports.updateCampana = async (req, res) => {
   const connection = await db.getConnection();
   try {
     const { id } = req.params;
-    const { nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, inventario_id, asignaciones } = req.body;
+    const { nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, distrito, detalles_zona, inventario_id, asignaciones } = req.body;
     
     await connection.beginTransaction();
 
     await connection.query(
-        'UPDATE campanas SET nombre = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, tipo = ?, latitud = ?, longitud = ? WHERE id = ?',
-        [nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud, longitud, id]
+        'UPDATE campanas SET nombre = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, tipo = ?, latitud = ?, longitud = ?, distrito = ?, detalles_zona = ? WHERE id = ?',
+        [nombre, descripcion, fecha_inicio, fecha_fin, tipo, latitud || null, longitud || null, distrito || null, detalles_zona || null, id]
     );
 
     if (asignaciones && Array.isArray(asignaciones) && inventario_id) {
@@ -271,7 +271,9 @@ exports.registrarAtencion = async (req, res) => {
 
         const { 
             propietario_id, 
-            nombrePropietario, telefonoPropietario, emailPropietario, direccionPropietario, latitudPropietario, longitudPropietario,
+            nombrePropietario, telefonoPropietario, emailPropietario, direccionPropietario, 
+            latitudPropietario, longitudPropietario, 
+            distritoPropietario, 
             animal_id, 
             nombreMascota, especie, raza, sexo, fechaNacimiento, peso, 
             cantidad,
@@ -299,8 +301,8 @@ exports.registrarAtencion = async (req, res) => {
                      finalPropietarioId = existingProp[0].id;
                  } else {
                      const [propResult] = await connection.query(
-                        "INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud) VALUES (?, ?, ?, ?, ?)",
-                        [existingUser[0].id, telefonoPropietario, direccionPropietario, latFinal, lngFinal]
+                        "INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud, distrito) VALUES (?, ?, ?, ?, ?, ?)",
+                        [existingUser[0].id, telefonoPropietario, direccionPropietario, latFinal, lngFinal, distritoPropietario || null]
                     );
                     finalPropietarioId = propResult.insertId;
                  }
@@ -316,15 +318,18 @@ exports.registrarAtencion = async (req, res) => {
                 const newUserId = userResult.insertId;
 
                 const [propResult] = await connection.query(
-                    "INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud) VALUES (?, ?, ?, ?, ?)",
-                    [newUserId, telefonoPropietario, direccionPropietario, latFinal, lngFinal]
+                    "INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud, distrito) VALUES (?, ?, ?, ?, ?, ?)",
+                    [newUserId, telefonoPropietario, direccionPropietario, latFinal, lngFinal, distritoPropietario || null]
                 );
                 finalPropietarioId = propResult.insertId;
                 credenciales = { email: emailPropietario, password_temporal: rawPassword };
             }
         } else {
-            if (latFinal && lngFinal) {
-                await connection.query("UPDATE propietarios SET latitud = ?, longitud = ? WHERE id = ?", [latFinal, lngFinal, finalPropietarioId]);
+            if (latFinal && lngFinal || distritoPropietario) {
+                await connection.query(
+                    "UPDATE propietarios SET latitud = COALESCE(?, latitud), longitud = COALESCE(?, longitud), distrito = COALESCE(?, distrito) WHERE id = ?", 
+                    [latFinal, lngFinal, distritoPropietario, finalPropietarioId]
+                );
             }
         }
 
@@ -376,15 +381,25 @@ exports.registrarAtencion = async (req, res) => {
                 [finalPropietarioId, inscripcion_id]
             );
         } else {
+       
             await connection.query(
                 `INSERT INTO campana_inscripciones 
-                (campana_id, propietario_id, direccion_contacto, cantidad_mascotas, estado, fecha_inscripcion) 
-                VALUES (?, ?, ?, 1, 'Visitado', NOW())
+                (campana_id, propietario_id, direccion_contacto, distrito, cantidad_mascotas, latitud, longitud, estado, fecha_inscripcion) 
+                VALUES (?, ?, ?, ?, 1, ?, ?, 'Visitado', NOW())
                 ON DUPLICATE KEY UPDATE 
                 estado = 'Visitado', 
                 cantidad_mascotas = cantidad_mascotas + 1,
+                latitud = COALESCE(latitud, VALUES(latitud)),
+                longitud = COALESCE(longitud, VALUES(longitud)),
                 fecha_inscripcion = NOW()`,
-                [id_campana, finalPropietarioId, direccionPropietario || 'En punto fijo']
+                [
+                    id_campana, 
+                    finalPropietarioId, 
+                    direccionPropietario || 'Atendido en campo', 
+                    distritoPropietario || null,
+                    latFinal, 
+                    lngFinal  
+                ]
             );
         }
 
@@ -451,7 +466,6 @@ exports.inscribirACampana = async (req, res) => {
 
     const { id: campana_id } = req.params;
     const usuario_id = req.user.id; 
-    
     const { direccion_contacto, cantidad_mascotas, latitud, longitud, actualizar_perfil } = req.body;
 
     if (!direccion_contacto) {
@@ -460,12 +474,26 @@ exports.inscribirACampana = async (req, res) => {
 
     const cantidadFinal = parseInt(cantidad_mascotas) || 1;
 
-    const [propRows] = await connection.query('SELECT id, latitud, longitud FROM propietarios WHERE usuario_id = ?', [usuario_id]);
+    const [propRows] = await connection.query('SELECT id, latitud, longitud, distrito FROM propietarios WHERE usuario_id = ?', [usuario_id]);
     if (propRows.length === 0) {
         return res.status(404).json({ message: 'Perfil no encontrado.' });
     }
     const propietario = propRows[0];
     const propietario_id = propietario.id;
+
+    const [campRows] = await connection.query('SELECT latitud, distrito FROM campanas WHERE id = ?', [campana_id]);
+    const campana = campRows[0];
+
+    if (!campana.latitud) {
+        const distritoCampana = (campana.distrito || "").toString().trim().toLowerCase();
+        const distritoUsuario = (propietario.distrito || "").toString().trim().toLowerCase();
+
+        if (distritoCampana !== distritoUsuario) {
+            return res.status(403).json({ 
+                message: `Esta campaña móvil es exclusiva para el ${campana.distrito}. Tu perfil indica que eres del ${propietario.distrito}.` 
+            });
+        }
+    }
 
     const debeActualizar = actualizar_perfil || (!propietario.latitud || !propietario.longitud);
 
@@ -477,8 +505,8 @@ exports.inscribirACampana = async (req, res) => {
     }
 
     await connection.query(
-        'INSERT INTO campana_inscripciones (campana_id, propietario_id, direccion_contacto, cantidad_mascotas, latitud, longitud, fecha_inscripcion) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [campana_id, propietario_id, direccion_contacto, cantidadFinal, latitud, longitud]
+        'INSERT INTO campana_inscripciones (campana_id, propietario_id, direccion_contacto, distrito, cantidad_mascotas, latitud, longitud, fecha_inscripcion) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+        [campana_id, propietario_id, direccion_contacto, propietario.distrito, cantidadFinal, latitud, longitud]
     );
 
     await connection.commit();
@@ -503,28 +531,33 @@ exports.inscribirACampana = async (req, res) => {
 
 exports.inscribirPublico = async (req, res) => {
     try {
-        const { campana_id, nombre, ci, celular, direccion, cantidad, detalles_animal, latitud, longitud } = req.body;
+        const { campana_id, nombre, ci, celular, direccion, distrito, cantidad, detalles_animal, latitud, longitud } = req.body;
 
-        if (!campana_id || !nombre || !ci || !celular) {
-            return res.status(400).json({ message: "Faltan datos obligatorios (Nombre, CI o Celular)." });
+        if (!campana_id || !nombre || !ci || !celular || !distrito) {
+            return res.status(400).json({ message: "Faltan datos obligatorios, incluyendo el distrito." });
+        }
+
+        const [campRows] = await db.query('SELECT latitud, distrito FROM campanas WHERE id = ?', [campana_id]);
+        if (campRows.length === 0) return res.status(404).json({ message: "Campaña no encontrada." });
+        const campana = campRows[0];
+
+        if (!campana.latitud && campana.distrito !== distrito) {
+            return res.status(403).json({ 
+                message: `Lo sentimos. Esta campaña móvil es exclusiva para vecinos del ${campana.distrito}. Te invitamos a esperar la campaña en tu zona.` 
+            });
         }
 
         const query = `
             INSERT INTO campana_inscripciones 
-            (campana_id, propietario_id, nombre_contacto, ci_contacto, celular_contacto, direccion_contacto, cantidad_mascotas, detalles_animal, latitud, longitud, fecha_inscripcion, estado)
-            VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pendiente')
+            (campana_id, propietario_id, nombre_contacto, ci_contacto, celular_contacto, direccion_contacto, distrito, cantidad_mascotas, detalles_animal, latitud, longitud, fecha_inscripcion, estado)
+            VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Pendiente')
         `;
 
         await db.query(query, [
-            campana_id, 
-            nombre, 
-            ci, 
-            celular, 
-            direccion || null,         
-            cantidad || 1,              
-            detalles_animal || 'Sin detalles', 
-            latitud || null,            
-            longitud || null
+            campana_id, nombre, ci, celular, 
+            direccion || null, distrito, 
+            cantidad || 1, detalles_animal || 'Sin detalles', 
+            latitud || null, longitud || null
         ]);
 
         res.status(201).json({ message: "¡Inscripción exitosa! Te esperamos en la campaña." });
@@ -608,13 +641,35 @@ exports.inscribirseCampana = async (req, res) => {
         const { campana_id, animal_id } = req.body;
         const usuario_id = req.user.id; 
 
-        const [propRows] = await connection.query('SELECT id, direccion FROM propietarios WHERE usuario_id = ?', [usuario_id]);
+        const [propRows] = await connection.query(
+            'SELECT id, direccion, distrito FROM propietarios WHERE usuario_id = ?', 
+            [usuario_id]
+        );
         
         if (propRows.length === 0) {
             return res.status(404).json({ message: 'No tienes perfil de propietario.' });
         }
-        
         const propietario = propRows[0];
+
+        if (!propietario.distrito) {
+            return res.status(400).json({ message: 'Por favor, actualiza tu perfil indicando a qué distrito perteneces antes de inscribirte.' });
+        }
+
+        const [campRows] = await connection.query('SELECT latitud, distrito FROM campanas WHERE id = ?', [campana_id]);
+        const campana = campRows[0];
+
+        const distritoCampana = (campana.distrito || "").toString().trim().toLowerCase();
+        const distritoUsuario = (propietario.distrito || "").toString().trim().toLowerCase();
+
+        console.log("DEBUG - Comparando Distritos:");
+        console.log("Campaña:", distritoCampana, "| Usuario:", distritoUsuario);
+        console.log("¿Es campaña móvil (latitud es null)?", !campana.latitud);
+
+        if (!campana.latitud && distritoCampana !== distritoUsuario) {
+            return res.status(403).json({ 
+                message: `Esta campaña móvil es exclusiva para el ${campana.distrito}. Tu perfil indica que eres del ${propietario.distrito}.` 
+            });
+        }
 
         const [mascotaRows] = await connection.query('SELECT nombre, especie FROM animales WHERE id = ?', [animal_id]);
         let detalles = `Mascota ID: ${animal_id}`;
@@ -624,9 +679,9 @@ exports.inscribirseCampana = async (req, res) => {
 
         await connection.query(
             `INSERT INTO campana_inscripciones 
-            (campana_id, propietario_id, direccion_contacto, cantidad_mascotas, detalles_animal, estado, fecha_inscripcion) 
-            VALUES (?, ?, ?, 1, ?, 'Inscrito', NOW())`,
-            [campana_id, propietario.id, propietario.direccion || 'Sin dirección', detalles]
+            (campana_id, propietario_id, direccion_contacto, distrito, cantidad_mascotas, detalles_animal, estado, fecha_inscripcion) 
+            VALUES (?, ?, ?, ?, 1, ?, 'Inscrito', NOW())`,
+            [campana_id, propietario.id, propietario.direccion || 'Sin dirección', propietario.distrito, detalles]
         );
 
         res.status(200).json({ message: "Inscripción exitosa." });

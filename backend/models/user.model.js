@@ -50,14 +50,17 @@ User.delete = async (id) => {
   return result.affectedRows > 0;
 };
 
-User.createPropietarioProfile = async (usuario_id, direccion, latitud, longitud, telefono = '') => {
+User.createPropietarioProfile = async (usuario_id, direccion, latitud, longitud, telefono = '', distrito = null) => {
     const [result] = await db.query(
         `INSERT INTO propietarios 
-        (usuario_id, apellido, direccion, latitud, longitud, telefono, creado_en) 
-        VALUES (?, '', ?, ?, ?, ?, NOW())`, 
-        [usuario_id, direccion, latitud, longitud, telefono]
+        (usuario_id, apellido, direccion, latitud, longitud, telefono, distrito, creado_en) 
+        VALUES (?, '', ?, ?, ?, ?, ?, NOW())`, 
+        [usuario_id, direccion, latitud, longitud, telefono, distrito] 
     );
     return result;
 };
-
+User.reactivate = async (id) => {
+  const [result] = await db.query("UPDATE usuarios SET estado = 'Activo' WHERE id = ?", [id]);
+  return result.affectedRows > 0;
+};
 module.exports = User;

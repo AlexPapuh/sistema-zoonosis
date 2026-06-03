@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Home, CheckCircle, Syringe } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-// 1. Veterinario (Radar)
 const iconVet = L.divIcon({
   className: 'bg-transparent border-none',
   html: renderToStaticMarkup(
@@ -19,7 +18,6 @@ const iconVet = L.divIcon({
   popupAnchor: [0, -10]
 });
 
-// 2. Punto Fijo (Pin Azul)
 const iconFijo = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -29,7 +27,6 @@ const iconFijo = new L.Icon({
     shadowSize: [41, 41]
 });
 
-// 3. Casa (Verde/Naranja)
 const getIconoCasa = (atendido) => {
     const color = atendido ? '#10B981' : '#F97316'; 
     
@@ -59,7 +56,6 @@ const getIconoCasa = (atendido) => {
     });
 };
 
-// --- B. FIX DE CARGA (Para que no salga gris) ---
 const MapFix = () => {
     const map = useMap();
     useEffect(() => {
@@ -73,15 +69,36 @@ const MapFix = () => {
     return null;
 };
 
-// --- C. COMPONENTE PRINCIPAL ---
-const MapaCampana = ({ centro, puntos, onAtenderDomicilio }) => {
+const ChangeMapView = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 16, { duration: 1.5 });
+        }
+    }, [center, map]);
+    return null;
+};
+
+const MapaCampana = ({ centro, puntos, ruta = [], onAtenderDomicilio }) => {
   return (
     <MapContainer center={centro} zoom={15} style={{ height: '100%', width: '100%' }}>
       <MapFix />
+      <ChangeMapView center={centro} />
+      
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; OpenStreetMap contributors'
       />
+
+      {ruta && ruta.length > 1 && (
+          <Polyline 
+              positions={ruta} 
+              color="#9333ea" 
+              weight={6} 
+              opacity={0.7} 
+              dashArray="10, 10" 
+          />
+      )}
 
       {puntos.map((punto) => {
         let iconoAUsar;
@@ -107,7 +124,6 @@ const MapaCampana = ({ centro, puntos, onAtenderDomicilio }) => {
                                 <CheckCircle size={14}/> ¡Ya Atendido!
                             </div>
                         ) : (
-                            // Si la campaña está activa (editable), mostramos el botón
                             punto.editable ? (
                                 <button 
                                     onClick={() => onAtenderDomicilio && onAtenderDomicilio(punto)}

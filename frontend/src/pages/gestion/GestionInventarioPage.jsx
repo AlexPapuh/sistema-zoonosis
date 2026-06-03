@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import inventarioService from '../../services/inventario.service.js';
 import { useAuth } from '../../context/AuthContext.jsx'; 
-import { Archive, AlertTriangle, Package, Syringe, Plus, Edit, Trash2, X, Save, Calculator, Box, Printer, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Archive, AlertTriangle, Package, Syringe, Plus, Edit, Trash2, X, Save, Calculator, Box, Printer, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'; 
@@ -21,6 +21,9 @@ const GestionInventarioPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [busqueda, setBusqueda] = useState('');
+  
+  // --- NUEVO: Estado para el filtro de vencimientos ---
+  const [filtroEstado, setFiltroEstado] = useState('Todos'); 
 
   const [form, setForm] = useState({
       nombre: '', tipo: 'Insumo', 
@@ -30,12 +33,38 @@ const GestionInventarioPage = () => {
       contenido_por_envase: 1 
   });
 
-  const productosFiltrados = productos.filter(prod => 
-      prod.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      prod.tipo.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (prod.lote && prod.lote.toLowerCase().includes(busqueda.toLowerCase())) ||
-      (prod.ubicacion && prod.ubicacion.toLowerCase().includes(busqueda.toLowerCase()))
-  );
+  const getVencimientoStatus = (fecha) => {
+      if (!fecha) return { color: 'text-gray-400', text: 'No aplica' };
+      const hoy = new Date();
+      const venc = new Date(fecha);
+      const diffTime = venc - hoy;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return { color: 'text-red-600 font-bold bg-red-100 px-2 rounded', text: 'VENCIDO' };
+      if (diffDays <= 30) return { color: 'text-orange-600 font-bold bg-orange-100 px-2 rounded', text: 'Por vencer' };
+      return { color: 'text-green-600', text: 'Vigente' };
+  };
+
+  // --- LÓGICA DE FILTRADO COMBINADO (Búsqueda + Estado de Vencimiento) ---
+  const productosFiltrados = productos.filter(prod => {
+      // 1. Filtro por texto
+      const coincideTexto = 
+          prod.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+          prod.tipo.toLowerCase().includes(busqueda.toLowerCase()) ||
+          (prod.lote && prod.lote.toLowerCase().includes(busqueda.toLowerCase())) ||
+          (prod.ubicacion && prod.ubicacion.toLowerCase().includes(busqueda.toLowerCase()));
+
+      if (!coincideTexto) return false;
+
+      // 2. Filtro por estado de vencimiento
+      if (filtroEstado !== 'Todos') {
+          const estadoActual = getVencimientoStatus(prod.fecha_vencimiento).text;
+          if (filtroEstado === 'Vencidos' && estadoActual !== 'VENCIDO') return false;
+          if (filtroEstado === 'Por vencer' && estadoActual !== 'Por vencer') return false;
+          if (filtroEstado === 'Vigentes' && estadoActual !== 'Vigente' && estadoActual !== 'No aplica') return false;
+      }
+
+      return true;
+  });
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -50,9 +79,10 @@ const GestionInventarioPage = () => {
       if (currentPage > 1) setCurrentPage(prev => prev - 1);
   };
 
+  // Si cambia la búsqueda o el filtro, volvemos a la página 1
   useEffect(() => {
       setCurrentPage(1);
-  }, [busqueda]);
+  }, [busqueda, filtroEstado]);
 
   const fetchData = async () => {
     try {
@@ -141,17 +171,6 @@ const GestionInventarioPage = () => {
     doc.save(`Inventario_Zoonosis_${fechaHoy.replace(/\//g, '-')}.pdf`);
   };
 
-  const getVencimientoStatus = (fecha) => {
-      if (!fecha) return { color: 'text-gray-400', text: 'No aplica' };
-      const hoy = new Date();
-      const venc = new Date(fecha);
-      const diffTime = venc - hoy;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) return { color: 'text-red-600 font-bold bg-red-100 px-2 rounded', text: 'VENCIDO' };
-      if (diffDays < 30) return { color: 'text-orange-600 font-bold bg-orange-100 px-2 rounded', text: 'Por vencer' };
-      return { color: 'text-green-600', text: 'Vigente' };
-  };
-
   useEffect(() => {
       const unidadesDivisibles = ['ml', 'mg', 'kg', 'lt']; 
       
@@ -176,7 +195,10 @@ const GestionInventarioPage = () => {
       setEditingId(prod.id);
       
       const contenido = prod.contenido_por_envase || 1;
-      const envases = contenido > 0 ? prod.stock / contenido : 0;
+      
+      // SOLUCIÓN AL BUG DE LOS DECIMALES INFINITOS
+      // Redondeamos el cálculo a 2 decimales para que no genere un número eterno
+      const envases = contenido > 0 ? Number((prod.stock / contenido).toFixed(2)) : 0;
 
       setForm({
           nombre: prod.nombre,
@@ -276,17 +298,37 @@ const GestionInventarioPage = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h3 className="font-bold text-gray-700">Listado de Productos</h3>
-            <div className="relative w-full max-w-md">
-                <input 
-                    type="text" 
-                    placeholder="Buscar por nombre, lote o tipo..." 
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            
+            <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
+                {/* --- NUEVO: Menú para Filtrar por estado de Vencimiento --- */}
+                <div className="relative w-full sm:w-48">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Filter className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <select 
+                        value={filtroEstado} 
+                        onChange={(e) => setFiltroEstado(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm text-gray-600 cursor-pointer"
+                    >
+                        <option value="Todos">Todos los estados</option>
+                        <option value="Vigentes">✅ Vigentes</option>
+                        <option value="Por vencer">⚠️ Por vencer (≤ 30 días)</option>
+                        <option value="Vencidos">❌ Vencidos</option>
+                    </select>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                    <input 
+                        type="text" 
+                        placeholder="Buscar nombre o lote..." 
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                </div>
             </div>
         </div>
 
@@ -308,7 +350,7 @@ const GestionInventarioPage = () => {
                         currentItems.map((prod) => {
                             const esBajo = prod.stock < prod.stock_minimo;
                             const statusVenc = getVencimientoStatus(prod.fecha_vencimiento);
-                            const esDivisible = ['ml', 'mg', 'lt', 'kg'].includes(prod.unidad?.toLowerCase());
+                            const esDivisibleFila = ['ml', 'mg', 'lt', 'kg'].includes(prod.unidad?.toLowerCase());
                             const tieneEnvaseDefinido = prod.contenido_por_envase > 1;
                             const frascosAprox = tieneEnvaseDefinido ? (prod.stock / prod.contenido_por_envase).toFixed(1) : 0;
 
@@ -326,7 +368,7 @@ const GestionInventarioPage = () => {
                                     </td>
                                     
                                     <td className="py-3 px-6 text-center">
-                                        {esDivisible && tieneEnvaseDefinido ? (
+                                        {esDivisibleFila && tieneEnvaseDefinido ? (
                                             <div className="flex flex-col items-center">
                                                 <span className={`font-bold text-lg ${esBajo ? 'text-red-600' : 'text-gray-800'}`}>
                                                     {frascosAprox} <span className="text-sm font-normal text-gray-500">Envases</span>
@@ -341,7 +383,7 @@ const GestionInventarioPage = () => {
                                         ) : (
                                             <div className="flex flex-col items-center">
                                                 <span className={`font-bold text-lg ${esBajo ? 'text-red-600' : 'text-gray-800'}`}>
-                                                    {Number(prod.stock).toFixed(esDivisible ? 2 : 0)} 
+                                                    {Number(prod.stock).toFixed(esDivisibleFila ? 2 : 0)} 
                                                     <span className="text-sm font-normal text-gray-500 ml-1">{prod.unidad}</span>
                                                 </span>
                                             </div>
@@ -459,6 +501,7 @@ const GestionInventarioPage = () => {
                                     <input 
                                         type="number" 
                                         min="0"
+                                        step="any"  /* <-- SOLUCIÓN: step="any" permite decimales y quita la alerta roja */
                                         name="cantidad_envases" 
                                         className="w-full border border-blue-300 rounded-lg p-2 text-center" 
                                         placeholder=""
@@ -471,7 +514,7 @@ const GestionInventarioPage = () => {
                                     <input 
                                         type="number" 
                                         min="0"
-                                        step="0.1"
+                                        step="any"
                                         name="contenido_por_envase" 
                                         className="w-full border border-blue-300 rounded-lg p-2 text-center" 
                                         placeholder=""
@@ -494,6 +537,7 @@ const GestionInventarioPage = () => {
                                     name="stock" 
                                     required 
                                     min="0"
+                                    step="any"
                                     className="w-full border rounded-lg p-2.5 text-lg font-bold text-gray-800" 
                                     value={form.stock} 
                                     onChange={(e) => setForm({...form, stock: e.target.value})} 

@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { 
   LayoutDashboard, Users, Dog, Stethoscope, Map, LogOut, FileText,
   Megaphone, Archive, CalendarDays, UserCircle, AlertTriangle,
-  ChevronLeft, Menu, Clock, Globe
+  ChevronLeft, Menu, Clock, Globe, DatabaseBackup
 } from 'lucide-react';
+import adminService from '../services/admin.service.js';
+import Swal from 'sweetalert2';
 
 const SidebarLink = ({ to, icon: Icon, text, isOpen }) => (
   <NavLink
@@ -39,13 +41,41 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     return <div className="my-4 border-t border-cyan-800" title={title}></div>;
   };
 
+  const handleBackup = () => {
+    Swal.fire({
+      title: '¿Descargar copia de seguridad?',
+      text: "Se generará un archivo .sql con toda la información actual de Zoonosis.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0e7490', 
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, descargar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+            title: 'Generando copia de seguridad...',
+            text: 'Por favor no cierres esta ventana, esto tomará unos segundos.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            await adminService.descargarBackup();
+            Swal.fire('¡Éxito!', 'La copia de seguridad se descargó correctamente.', 'success');
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo generar la copia de seguridad.', 'error');
+        }
+      }
+    });
+  };
+
   return (
     <div 
       className={`flex h-screen flex-col bg-cyan-900 text-white shadow-lg transition-all duration-300 
       ${isOpen ? 'w-64' : 'w-20'} 
       fixed left-0 top-0 z-50`} 
     >
-      {/* --- Header --- */}
       <div className="flex items-center justify-between p-4 border-b border-cyan-800 h-20">
         <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 hidden'}`}>
           <h1 className="text-2xl font-bold truncate">Zoonosis</h1>
@@ -60,11 +90,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </button>
       </div>
       
-      {/* --- Navegación --- */}
       <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 py-4 custom-scrollbar">
       <SidebarLink to="/dashboard" icon={LayoutDashboard} text="Inicio" isOpen={isOpen} />
       
-        {/* --- Admin --- */}
         {isAdmin && (
           <>
             {renderSectionHeader("Administración")}
@@ -72,10 +100,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <SidebarLink to="/admin/reportes" icon={FileText} text="Reportes" isOpen={isOpen} />
             <SidebarLink to="/admin/servicios" icon={Globe} text="Portal Web" isOpen={isOpen} />
             <SidebarLink to="/admin/horarios" icon={Clock} text="Horarios" isOpen={isOpen} />
+            
+            <button 
+              onClick={handleBackup}
+              title={!isOpen ? "Backup DB" : ""}
+              className={`flex items-center w-full p-2 mt-2 text-yellow-400 hover:bg-cyan-800 rounded transition
+                ${isOpen ? 'px-3 justify-start' : 'justify-center px-2'}`}
+            >
+              <DatabaseBackup size={20} className={`${isOpen ? 'mr-3' : ''}`} />
+              <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'hidden opacity-0 w-0'}`}>
+                Backup DB
+              </span>
+            </button>
           </>
         )}
 
-        {/* --- Gestión --- */}
         {(isAdmin || isVete) && (
           <>
             {renderSectionHeader("Gestión")}
@@ -91,7 +130,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </>
         )}
 
-        {/* --- Veterinario --- */}
         {isVete && (
             <>
             {!isAdmin && renderSectionHeader("Consultas")} 
@@ -99,7 +137,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </>
         )}
 
-        {/* --- Propietario --- */}
         {isPropietario && (
           <>
             {renderSectionHeader("Mi Perfil")}
@@ -112,7 +149,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
       </nav>
 
-      {/* --- Footer --- */}
       <div className="border-t border-cyan-800 p-4">
         <NavLink 
           to="/perfil" 

@@ -89,12 +89,10 @@ const PetCard = ({ mascota, onVerifyQR, onHistory, onAction }) => {
           <h3 className="text-xl font-bold text-gray-800 truncate">{mascota.nombre}</h3>
           <p className="text-sm text-blue-600 font-semibold uppercase">{mascota.especie} - {mascota.raza}</p>
           <p className="text-sm text-gray-500">{mascota.sexo}</p>
-          {/* Si tienes una función calcularEdad, úsala aquí, sino muestra mascota.edad */}
           <p className="text-sm text-gray-500">{mascota.edad} años</p> 
         </div>
       </div>
 
-      {/* --- FOOTER BOTONES (Corregido con tu lógica de deshabilitar) --- */}
         <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-between mt-auto">
              
              <button 

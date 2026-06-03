@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { Dog, Calendar, MapPin, ChevronRight, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-
+import ChatbotWidget from '../../components/ChatbotWidget.jsx'; 
 const PropietarioDashboard = () => {
   const { user } = useAuth();
 
@@ -41,7 +41,8 @@ const PropietarioDashboard = () => {
       lightColor: "bg-emerald-100 text-emerald-600"
     }
   ];
-const handleSoporte = () => {
+
+  const handleSoporte = () => {
     Swal.fire({
       title: '<strong>Contacto Zoonosis</strong>',
       icon: 'info',
@@ -70,9 +71,9 @@ const handleSoporte = () => {
       confirmButtonColor: '#111827',
     });
   };
+
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* --- HERO HEADER --- */}
+    <div className="min-h-screen bg-gray-50/50 relative">
       <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-3xl p-8 mb-10 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -82,12 +83,10 @@ const handleSoporte = () => {
             Bienvenido a tu espacio en Zoonosis. Aquí puedes gestionar la salud de tus mascotas y colaborar con la comunidad.
           </p>
         </div>
-        {/* Decoración de fondo */}
         <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-10"></div>
         <div className="absolute bottom-[-20px] left-20 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
       </div>
 
-      {/* --- GRID DE OPCIONES --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
         {cards.map((card, index) => (
           <Link 
@@ -113,7 +112,6 @@ const handleSoporte = () => {
         ))}
       </div>
 
-      {/* --- SECCIÓN INFORMATIVA --- */}
       <div className="mt-10 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mx-2 flex flex-col md:flex-row items-center justify-between">
          <div>
             <h4 className="font-bold text-gray-800 text-lg">¿Necesitas ayuda urgente?</h4>
@@ -125,6 +123,9 @@ const handleSoporte = () => {
             Contactar Soporte
          </button>
       </div>
+
+      <ChatbotWidget />
+      
     </div>
   );
 };

@@ -1,4 +1,5 @@
-dialogflow-key.json
+config/chatbot-key.json
 node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
+.env

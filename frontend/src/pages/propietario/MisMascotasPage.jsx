@@ -4,7 +4,7 @@ import authService from '../../services/auth.service.js';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Dog, QrCode, FileText, X, Camera, Download, Globe, Type, 
+  Dog, QrCode, FileText, X, Camera, Download, Type, 
   MoreVertical, AlertTriangle, HeartCrack, Check, Info
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -49,7 +49,6 @@ const calcularEdad = (fechaNacimiento) => {
   return `${edad} año${edad > 1 ? 's' : ''}`;
 };
 
- 
 const PetCard = ({ mascota, onVerifyQR, onHistory, onAction }) => {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
@@ -179,8 +178,6 @@ const MisMascotasPage = () => {
   const [newPhotoFile, setNewPhotoFile] = useState(null); 
 
   const [selectedQR, setSelectedQR] = useState(null);
-  const [qrType, setQrType] = useState('web'); 
-  const [currentAnimalData, setCurrentAnimalData] = useState(null);
 
   useEffect(() => {
     fetchMascotas();
@@ -242,7 +239,7 @@ const MisMascotasPage = () => {
     }
     try {
         const token = authService.getCurrentUser().token;
-        await axios.put(`http://localhost:5000/api/animales/${selectedPet.id}`, {
+        await axios.put(`http://2.25.170.83:5000/api/animales/${selectedPet.id}`, {
             foto: newPhotoFile
         }, {
             headers: { Authorization: `Bearer ${token}` }
@@ -259,7 +256,7 @@ const MisMascotasPage = () => {
   const handleSubmitStatus = async () => {
       try {
         const token = authService.getCurrentUser().token;
-        await axios.put(`http://localhost:5000/api/animales/${selectedPet.id}`, {
+        await axios.put(`http://2.25.170.83:5000/api/animales/${selectedPet.id}`, {
             estado: newStatus
         }, {
             headers: { Authorization: `Bearer ${token}` }
@@ -299,29 +296,10 @@ const MisMascotasPage = () => {
       setNewStatus(null);
   };
 
+  // NUEVA FUNCIÓN: Genera y muestra directamente el QR de texto
   const handleVerQR = async (mascota) => {
       if (mascota.estado === 'Deceso') return;
 
-      setCurrentAnimalData(mascota);
-      setQrType('web'); 
-      await generateWebQR(mascota);
-      setShowQRModal(true);
-  };
-
-  const generateWebQR = async (mascota) => {
-    try {
-        const data = await animalService.getAnimalQR(mascota.id);
-        setSelectedQR({
-            img: data.qrDataUrl,
-            nombre: mascota.nombre,
-            tipo: 'Enlace Web'
-        });
-    } catch (error) {
-        Swal.fire({icon: 'error', title: 'Error', text: 'No se pudo generar el QR'});
-    }
-  };
-
-  const generateTextQR = async (mascota) => {
       try {
         const nombreDueno = mascota.propietario_nombre || "No registrado";
         const telefonoDueno = mascota.propietario_telefono || "No registrado";
@@ -333,26 +311,18 @@ const MisMascotasPage = () => {
             nombre: mascota.nombre,
             tipo: 'Información de Texto (Offline)'
         });
+        
+        setShowQRModal(true); // Abre el modal solo después de generarlo
       } catch (error) {
           Swal.fire({icon: 'error', title: 'Error', text: 'No se pudo generar el QR'});
       }
   };
 
-  useEffect(() => {
-      if (showQRModal && currentAnimalData) {
-          if (qrType === 'web') {
-              generateWebQR(currentAnimalData);
-          } else {
-              generateTextQR(currentAnimalData);
-          }
-      }
-  }, [qrType]);
-
   const downloadQR = () => {
       if (!selectedQR) return;
       const link = document.createElement('a');
       link.href = selectedQR.img;
-      link.download = `QR-${selectedQR.nombre}-${qrType}.png`;
+      link.download = `QR-${selectedQR.nombre}-Texto.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -449,14 +419,28 @@ const MisMascotasPage = () => {
         </div>
       )}
 
+      {/* MODAL DEL QR ACTUALIZADO: Sin botones de alternancia */}
       {showQRModal && selectedQR && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center border-4 border-blue-100">
             <button onClick={() => setShowQRModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="h-6 w-6" /></button>
+            
             <h3 className="text-2xl font-bold text-gray-800 mb-1">{selectedQR.nombre}</h3>
-            <div className="flex justify-center space-x-4 mb-4 mt-2"><button onClick={() => setQrType('web')} className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-colors ${qrType === 'web' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}><Globe className="w-3 h-3 mr-1" /> Web</button><button onClick={() => setQrType('text')} className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-colors ${qrType === 'text' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}><Type className="w-3 h-3 mr-1" /> Texto</button></div>
-            <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-inner inline-block mb-6"><img src={selectedQR.img} alt="Código QR" className="w-48 h-48 object-contain" /></div>
-            <button onClick={downloadQR} className="w-full flex items-center justify-center rounded-lg bg-gray-900 py-3 font-semibold text-white hover:bg-black transition-all shadow-lg"><Download className="mr-2 h-5 w-5" /> Descargar QR</button>
+            
+            {/* Etiqueta indicando el tipo de QR en lugar de botones */}
+            <div className="flex justify-center mb-4 mt-2">
+              <span className="flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                <Type className="w-3 h-3 mr-1" /> QR Offline (Texto)
+              </span>
+            </div>
+            
+            <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-inner inline-block mb-6">
+              <img src={selectedQR.img} alt="Código QR" className="w-48 h-48 object-contain" />
+            </div>
+            
+            <button onClick={downloadQR} className="w-full flex items-center justify-center rounded-lg bg-gray-900 py-3 font-semibold text-white hover:bg-black transition-all shadow-lg">
+              <Download className="mr-2 h-5 w-5" /> Descargar QR
+            </button>
           </div>
         </div>
       )}

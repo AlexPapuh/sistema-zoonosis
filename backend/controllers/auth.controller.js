@@ -88,6 +88,7 @@ exports.login = async (req, res) => {
         email: userFound.email,
         rol: userFound.rol,
         direccion: datosPropietario.direccion || null,
+        distrito: datosPropietario.distrito || null,
         latitud: datosPropietario.latitud || null,
         longitud: datosPropietario.longitud || null,
         token: token
@@ -113,7 +114,7 @@ exports.getProfile = async (req, res) => {
         let datosExtra = {};
 
         if (userRol === 'Propietario') {
-            const [props] = await connection.query("SELECT id as propietario_id, telefono, direccion, latitud, longitud FROM propietarios WHERE usuario_id = ?", [userId]);
+            const [props] = await connection.query("SELECT id as propietario_id, telefono, direccion, distrito, latitud, longitud FROM propietarios WHERE usuario_id = ?", [userId]);
             if (props.length > 0) datosExtra = props[0];
         } 
         
@@ -134,7 +135,7 @@ exports.updateProfile = async (req, res) => {
 
         const userId = req.user.id; 
         const userRol = req.user.rol;
-        const { nombre, password, telefono, direccion, latitud, longitud } = req.body;
+        const { nombre, password, telefono, direccion, distrito, latitud, longitud } = req.body;
 
         let queryUser = "UPDATE usuarios SET nombre = ? WHERE id = ?";
         let paramsUser = [nombre, userId];
@@ -153,12 +154,12 @@ exports.updateProfile = async (req, res) => {
             
             if (exist.length > 0) {
                 await connection.query(
-                    "UPDATE propietarios SET telefono = ?, direccion = ?, latitud = ?, longitud = ? WHERE usuario_id = ?",
-                    [telefono, direccion, latitud, longitud, userId]
+                    "UPDATE propietarios SET telefono = ?, direccion = ?, distrito = ?, latitud = ?, longitud = ? WHERE usuario_id = ?",
+                    [telefono, direccion, distrito, latitud, longitud, userId]
                 );
             } else {
                 await connection.query(
-                    "INSERT INTO propietarios (usuario_id, telefono, direccion, latitud, longitud) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO propietarios (usuario_id, telefono, direccion, distrito, latitud, longitud) VALUES (?, ?, ?, ?, ?)",
                     [userId, telefono, direccion, latitud, longitud]
                 );
             }

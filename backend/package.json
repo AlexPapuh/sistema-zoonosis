@@ -17,6 +17,8 @@
   "author": "alex",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/dialogflow": "^7.5.0",
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

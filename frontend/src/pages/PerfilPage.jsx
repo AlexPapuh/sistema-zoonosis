@@ -18,6 +18,32 @@ L.Icon.Default.mergeOptions({
   shadowUrl: iconShadow,
 });
 
+const DISTRITOS_POTOSI = {
+    urbanos: [
+        { id: 'Distrito 1', nombre: 'Distrito 1: San Gerardo', lat: -19.585254, lng: -65.745972 },
+        { id: 'Distrito 2', nombre: 'Distrito 2: San Martín', lat: -19.587633, lng: -65.746918 },
+        { id: 'Distrito 3', nombre: 'Distrito 3: San Juan', lat: -19.590314, lng: -65.747041 },
+        { id: 'Distrito 4', nombre: 'Distrito 4: San Cristóbal', lat: -19.598222, lng: -65.742608 },
+        { id: 'Distrito 5', nombre: 'Distrito 5: San Roque', lat: -19.582477, lng: -65.752344 },
+        { id: 'Distrito 6', nombre: 'Distrito 6: Zona Central', lat: -19.587537, lng: -65.754547 },
+        { id: 'Distrito 7', nombre: 'Distrito 7: San Pedro', lat: -19.595141, lng: -65.752905 },
+        { id: 'Distrito 8', nombre: 'Distrito 8: San Benito', lat: -19.591430, lng: -65.757487 },
+        { id: 'Distrito 9', nombre: 'Distrito 9: Las Delicias', lat: -19.571709, lng: -65.759418 },
+        { id: 'Distrito 10', nombre: 'Distrito 10: Ciudad Satélite', lat: -19.572161, lng: -65.765592 },
+        { id: 'Distrito 11', nombre: 'Distrito 11: San Clemente', lat: -19.577416, lng: -65.763750 },
+        { id: 'Distrito 12', nombre: 'Distrito 12: Villa Copacabana', lat: -19.574175, lng: -65.772255 },
+        { id: 'Distrito 17', nombre: 'Distrito 17: Lecherías', lat: -19.557750, lng: -65.759351 },
+        { id: 'Distrito 19', nombre: 'Distrito 19: Universidad', lat: -19.556577, lng: -65.763539 },
+        { id: 'Distrito 20', nombre: 'Distrito 20: Cantumarca', lat: -19.585788, lng: -65.780453 },
+    ],
+    rurales: [
+        { id: 'Distrito 13', nombre: 'Distrito 13: Tarapaya', lat: -19.476637, lng: -65.798994 },
+        { id: 'Distrito 14', nombre: 'Distrito 14: Chullchucani', lat: -19.463732, lng: -65.637103 },
+        { id: 'Distrito 15', nombre: 'Distrito 15: Huari Huari', lat: -19.449177, lng: -65.595153 },
+        { id: 'Distrito 16', nombre: 'Distrito 16: Concepción (Rural)', lat: -19.639575, lng: -65.740161 },
+        { id: 'Distrito 18', nombre: 'Distrito 18: Manquiri', lat: -19.429259, lng: -65.718727 },
+    ]
+};
 
 const MapFix = () => {
     const map = useMap();
@@ -26,6 +52,16 @@ const MapFix = () => {
         const timer = setTimeout(() => map.invalidateSize(), 400);
         return () => clearTimeout(timer);
     }, [map]);
+    return null;
+};
+
+const ChangeMapView = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.flyTo(center, 16, { duration: 1.2 });
+        }
+    }, [center, map]);
     return null;
 };
 
@@ -41,9 +77,11 @@ const PerfilPage = () => {
   const [rol, setRol] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
+  const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
+
   const [form, setForm] = useState({
       nombre: '', email: '', password: '', 
-      telefono: '', direccion: '', latitud: '', longitud: ''
+      telefono: '', direccion: '', distrito: '', latitud: '', longitud: ''
   });
 
   useEffect(() => {
@@ -51,12 +89,21 @@ const PerfilPage = () => {
         try {
             const data = await authService.getProfile();
             setRol(data.rol); 
+            
+            if (data.latitud && data.longitud) {
+                setMapaCentro([parseFloat(data.latitud), parseFloat(data.longitud)]);
+            } else if (data.distrito) {
+                const distritoEncontrado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === data.distrito);
+                if (distritoEncontrado) setMapaCentro([distritoEncontrado.lat, distritoEncontrado.lng]);
+            }
+
             setForm({
                 nombre: data.nombre,
                 email: data.email,
                 password: '', 
                 telefono: data.telefono || '', 
                 direccion: data.direccion || '',
+                distrito: data.distrito || '', 
                 latitud: data.latitud,
                 longitud: data.longitud
             });
@@ -70,11 +117,27 @@ const PerfilPage = () => {
     fetchProfile();
   }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+      const { name, value } = e.target;
+      setForm({ ...form, [name]: value });
+
+      if (name === 'distrito') {
+          const distritoEncontrado = [...DISTRITOS_POTOSI.urbanos, ...DISTRITOS_POTOSI.rurales].find(d => d.id === value);
+          if (distritoEncontrado) {
+              setMapaCentro([distritoEncontrado.lat, distritoEncontrado.lng]);
+          }
+      }
+  };
+
   const handleMapClick = (latlng) => setForm({ ...form, latitud: latlng.lat, longitud: latlng.lng });
 
   const handleSubmit = async (e) => {
       e.preventDefault();
+      
+      if (rol === 'Propietario' && !form.distrito) {
+          return Swal.fire('Atención', 'Por favor, selecciona tu distrito antes de guardar.', 'warning');
+      }
+
       try {
           await authService.updateProfile(form);
           await Swal.fire({
@@ -118,7 +181,6 @@ const PerfilPage = () => {
 
             <form onSubmit={handleSubmit} className="p-8 space-y-8" autoComplete="off">
                 
-                {/* 1. DATOS DE CUENTA */}
                 <div>
                     <h3 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">Información de la Cuenta</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -189,8 +251,32 @@ const PerfilPage = () => {
                                     <input type="text" name="telefono" className="pl-10 w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" value={form.telefono} onChange={handleChange} />
                                 </div>
                             </div>
+                            
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección Escrita</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1 text-blue-600">Distrito al que perteneces</label>
+                                <select
+                                    name="distrito"
+                                    value={form.distrito}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none bg-white cursor-pointer"
+                                    required
+                                >
+                                    <option value="" disabled>-- Selecciona tu distrito --</option>
+                                    <optgroup label="🏢 Distritos Urbanos">
+                                        {DISTRITOS_POTOSI.urbanos.map(dist => (
+                                            <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="🌲 Distritos Rurales">
+                                        {DISTRITOS_POTOSI.rurales.map(dist => (
+                                            <option key={dist.id} value={dist.id}>{dist.nombre}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección Escrita (Calle/Zona)</label>
                                 <input type="text" name="direccion" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-green-500 outline-none" value={form.direccion} onChange={handleChange} />
                             </div>
                         </div>
@@ -199,12 +285,13 @@ const PerfilPage = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Ubicación de Domicilio (Haz clic para actualizar)</label>
                             
                             <div className="h-72 w-full rounded-lg overflow-hidden border border-gray-300 relative z-0 shadow-sm bg-gray-100">
-                                <MapContainer center={form.latitud ? [form.latitud, form.longitud] : [-19.5894, -65.7541]} zoom={15} style={{ height: '100%', width: '100%' }}>
+                                <MapContainer center={mapaCentro} zoom={15} style={{ height: '100%', width: '100%' }}>
                                     <TileLayer 
                                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
                                     />
                                     <MapFix /> 
+                                    <ChangeMapView center={mapaCentro} />
                                     <LocationPicker onLocationSelected={handleMapClick} position={form.latitud ? [form.latitud, form.longitud] : null} />
                                 </MapContainer>
                             </div>

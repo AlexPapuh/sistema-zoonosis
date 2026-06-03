@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth/"; 
+const API_URL = "http://2.25.170.83:5000/api/auth/"; 
 
 const register = async (userData) => {
   const response = await axios.post(API_URL + 'register', userData);
@@ -92,6 +92,7 @@ const resetPassword = async (email, code, newPassword) => {
         throw error.response?.data?.message || 'Error al restablecer contraseña';
     }
 };
+
 const authService = {
   register,
   login,

@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/horario.controller');
 const authJwt = require('../middleware/auth.middleware');
 
+
 router.get('/config', controller.getHorarioNormal);
 router.get('/especiales', controller.getDiasEspeciales);
 
