@@ -231,17 +231,19 @@ Reporte.getPropietariosDetallados = async () => {
         SELECT 
             u.nombre,
             u.email,
+            -- Extraemos CI de la tabla usuarios
             u.ci,
-            u.telefono,
+            -- Extraemos el teléfono de la tabla propietarios (p)
+            p.telefono,
             u.creado_en,
             p.direccion,
             COUNT(a.id) as cantidad_mascotas
         FROM usuarios u
-        JOIN propietarios p ON u.id = p.usuario_id
+        -- Usamos LEFT JOIN para que traiga usuarios aunque no tengan perfil de propietario aún
+        LEFT JOIN propietarios p ON u.id = p.usuario_id
         LEFT JOIN animales a ON p.id = a.propietario_id AND a.estado = 'Activo'
         WHERE u.rol = 'Propietario'
-        -- CAMBIO AQUÍ: Agregamos todas las columnas no agregadas al GROUP BY
-        GROUP BY u.id, u.nombre, u.email, u.ci, u.telefono, u.creado_en, p.direccion
+        GROUP BY u.id, u.nombre, u.email, u.ci, p.telefono, u.creado_en, p.direccion
         ORDER BY u.creado_en DESC
     `);
     return rows;
