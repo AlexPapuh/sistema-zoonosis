@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 
-const SOCKET_URL = 'http://2.25.170.83:5000'; 
+const SOCKET_URL = 'https://zoonosispotosi.site'; 
 
 const socket = io(SOCKET_URL, {
     autoConnect: false, 

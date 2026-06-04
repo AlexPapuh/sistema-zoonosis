@@ -239,7 +239,7 @@ const MisMascotasPage = () => {
     }
     try {
         const token = authService.getCurrentUser().token;
-        await axios.put(`http://2.25.170.83:5000/api/animales/${selectedPet.id}`, {
+        await axios.put(`https://zoonosispotosi.site/api/animales/${selectedPet.id}`, {
             foto: newPhotoFile
         }, {
             headers: { Authorization: `Bearer ${token}` }
@@ -256,7 +256,7 @@ const MisMascotasPage = () => {
   const handleSubmitStatus = async () => {
       try {
         const token = authService.getCurrentUser().token;
-        await axios.put(`http://2.25.170.83:5000/api/animales/${selectedPet.id}`, {
+        await axios.put(`https://zoonosispotosi.site/api/animales/${selectedPet.id}`, {
             estado: newStatus
         }, {
             headers: { Authorization: `Bearer ${token}` }

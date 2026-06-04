@@ -35,7 +35,7 @@ const ChatbotWidget = () => {
 
     try {
       // 2. Enviamos el mensaje a tu Backend
-      const response = await fetch('http://2.25.170.83:5000/api/chatbot/chat', {
+      const response = await fetch('https://zoonosispotosi.site/api/chatbot/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

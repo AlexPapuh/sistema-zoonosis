@@ -103,5 +103,5 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/admin', backupRoutes);
 
 server.listen(PORT, () => {
-  console.log(`🚀 Servidor (HTTP + Socket + WhatsApp) corriendo en http://zoonosispotosi.site:${PORT}`);
+  console.log(`🚀 Servidor (HTTP + Socket + WhatsApp) corriendo en https://zoonosispotosi.site:${PORT}`);
 });

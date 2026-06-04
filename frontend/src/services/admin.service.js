@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './auth.service.js';
 
-const API_URL = 'http://2.25.170.83:5000/api/admin';
+const API_URL = 'https://zoonosispotosi.site/api/admin';
 
 const authHeader = () => {
     const storedData = authService.getCurrentUser();
@@ -14,10 +14,9 @@ const descargarBackup = async () => {
     try {
         const response = await axios.get(`${API_URL}/backup`, {
             headers: authHeader(),
-            responseType: 'blob' // Clave para manejar archivos
+            responseType: 'blob' 
         });
 
-        // Lógica para descargar el archivo en el navegador
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;

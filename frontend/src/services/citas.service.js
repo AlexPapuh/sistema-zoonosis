@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './auth.service.js';
 
-const API_URL = 'http://2.25.170.83:5000/api/citas/';
+const API_URL = 'https://zoonosispotosi.site/api/citas/';
 
 const authHeader = () => {
   const storedData = authService.getCurrentUser();
