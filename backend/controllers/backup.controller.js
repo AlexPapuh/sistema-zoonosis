@@ -16,8 +16,7 @@ exports.descargarBackup = (req, res) => {
     const dbPass = process.env.DB_PASSWORD ? `-p${process.env.DB_PASSWORD}` : ''; 
     const dbName = process.env.DB_NAME || 'veterinaria_db'; 
 
-    const mysqldumpPath = '"C:/Program Files/MySQL/MySQL Server 9.5/bin/mysqldump"'; 
-
+    const mysqldumpPath = 'mysqldump';
     const cmd = `${mysqldumpPath} -u ${dbUser} ${dbPass} ${dbName} > "${filePath}"`;
     
     exec(cmd, (error, stdout, stderr) => {
