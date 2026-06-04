@@ -221,14 +221,14 @@ const WelcomePage = () => {
             <p className="mt-4 max-w-2xl text-lg text-gray-500 mx-auto">Atención integral del Centro Municipal de Zoonosis.</p>
           </div>
           
-          {servicios.length === 0 ? (
-              <div className="text-center py-12">
+                {!Array.isArray(servicios) || servicios.length === 0 ? (
+                <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-400">Cargando servicios disponibles...</p>
               </div>
           ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {servicios.map((servicio, idx) => {
+                {servicios?.map((servicio, idx) => {
                   const IconComponent = iconMap[servicio.icono] || Info; // Fallback a 'Info' si no existe
                   const styles = colorMap[servicio.color] || colorMap['blue']; // Fallback a 'blue'
 
