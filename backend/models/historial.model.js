@@ -22,8 +22,11 @@ class Historial {
                 const rawPassword = data.telefonoPropietario ? data.telefonoPropietario.toString() : '123456';
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(rawPassword, salt);
-
-                const [userResult] = await connection.query("INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'Propietario')", [data.nombrePropietario, data.emailPropietario, hashedPassword]);
+                const ciFinal = data.ciPropietario || null;
+                const [userResult] = await connection.query(
+                    "INSERT INTO usuarios (nombre, email, password, ci, rol) VALUES (?, ?, ?, ?, 'Propietario')", 
+                    [data.nombrePropietario, data.emailPropietario, hashedPassword, ciFinal]
+                );
                 const newUserId = userResult.insertId;
 
                 const [propResult] = await connection.query(

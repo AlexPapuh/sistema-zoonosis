@@ -95,14 +95,12 @@ const calcularEdad = (fechaNac) => {
     return "Menos de 1 mes";
 };
 
-// --- FUNCIÓN PARA EVALUAR FECHAS DE VENCIMIENTO ---
 const determinarEstadoVencimiento = (fechaString) => {
     if (!fechaString) return { estado: 'ok', dias: 999 };
     
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     
-    // Parseo seguro de fecha evitando problemas de zona horaria
     const [year, month, day] = fechaString.split('T')[0].split('-');
     const fechaVenc = new Date(year, month - 1, day);
     fechaVenc.setHours(0, 0, 0, 0);
@@ -139,7 +137,6 @@ const TratamientoPage = () => {
     const [busquedaInsumo, setBusquedaInsumo] = useState('');
     const [insumosSeleccionados, setInsumosSeleccionados] = useState({}); 
 
-    // --- ESTADO PARA CONTROLAR EL CENTRO DEL MAPA ---
     const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
 
     const [formMascota, setFormMascota] = useState({
@@ -148,7 +145,7 @@ const TratamientoPage = () => {
     });
     
     const [formPropietario, setFormPropietario] = useState({
-        nombre: '', telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: ''
+        nombre: '', ci: '', telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: ''
     });
     
     const [formTratamiento, setFormTratamiento] = useState({
@@ -412,6 +409,7 @@ const TratamientoPage = () => {
         setResultadosBusqueda([]);
         setFormPropietario({
             nombre: prop.nombre,
+            ci: prop.ci || '',
             telefono: prop.telefono || '',
             email: prop.email,
             direccion: prop.direccion || '',
@@ -431,7 +429,7 @@ const TratamientoPage = () => {
         setMascotasDelPropietario([]);
         setPacienteSeleccionadoId('');
         setFormMascota({ nombre: '', especie: 'Perro', raza: '', sexo: 'Macho', fechaNacimiento: '', peso: '', otraEspecie: '' });
-        setFormPropietario({ nombre: '', telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: '' });
+        setFormPropietario({ nombre: '', ci: '' , telefono: '', email: '', direccion: '', distrito: '', latitud: '', longitud: '' });
     };
 
     const handlePacienteSelect = (e) => {
@@ -560,6 +558,7 @@ const TratamientoPage = () => {
             animal_id: (!esNuevaMascota) ? pacienteSeleccionadoId : null,
             
             nombrePropietario: formPropietario.nombre,
+            ciPropietario: formPropietario.ci,
             telefonoPropietario: formPropietario.telefono,
             emailPropietario: formPropietario.email,
             direccionPropietario: formPropietario.direccion,
@@ -638,7 +637,6 @@ const TratamientoPage = () => {
 
     if (loading) return <div className="p-8 text-center">Cargando...</div>;
 
-    // --- LÓGICA DE BLOQUEO DE ATENCIÓN PARA PACIENTES CON DECESO/PÉRDIDA ---
     const mascotaSeleccionadaObj = pacienteSeleccionadoId && pacienteSeleccionadoId !== 'nuevo' 
         ? mascotasDelPropietario.find(m => m.id === pacienteSeleccionadoId) 
         : null;
@@ -684,6 +682,7 @@ const TratamientoPage = () => {
                                 <div className="mt-4 pt-4 border-t bg-yellow-50 p-3 rounded">
                                     <p className="text-sm font-bold text-yellow-800 mb-2">Registrar Nuevo Dueño</p>
                                     <input type="text" name="nombre" placeholder="Nombre Completo" required className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.nombre} onChange={handlePropietarioChange}/>
+                                    <input type="text" name="ci" placeholder="C.I." className="w-full border rounded p-2 mb-2 text-sm bg-white" value={formPropietario.ci} onChange={handlePropietarioChange}/>
                                     <input type="text" name="telefono" placeholder="Teléfono" className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.telefono} onChange={handlePropietarioChange}/>
                                     <input type="email" name="email" placeholder="Email" required className="w-full border rounded p-2 mb-2 text-sm" value={formPropietario.email} onChange={handlePropietarioChange}/>
                                     
