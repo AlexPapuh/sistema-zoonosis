@@ -29,10 +29,10 @@ useEffect(() => {
     setIsLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+ const login = async (email, password) => {
     try {
       const data = await authService.login(email, password);
-      setUser(data.user);
+      setUser(data.user || data.usuario); 
       setToken(data.token);
       setIsAuthenticated(true);
       return data; 
@@ -52,7 +52,7 @@ useEffect(() => {
     user,
     token,
     isAuthenticated,
-    isLoading,
+    loading: isLoading,
     login,
     logout,
   };
