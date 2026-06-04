@@ -14,10 +14,10 @@ const transporter = nodemailer.createTransport({
 
 exports.register = async (req, res) => {
   try {
-    const { nombre, email, password, rol } = req.body;
+    const { nombre, email, password, rol, ci, telefono, direccion } = req.body;
 
     if (!nombre || !email || !password || !rol) {
-      return res.status(400).json({ message: 'Todos los campos son requeridos.' });
+      return res.status(400).json({ message: 'Todos los campos básicos son requeridos.' });
     }
 
     const userFound = await User.findByEmail(email);
@@ -26,6 +26,29 @@ exports.register = async (req, res) => {
     }
 
     const newUser = await User.create(nombre, email, password, rol);
+
+    if (rol === 'Propietario') {
+      const connection = await db.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        if (ci) {
+            await connection.query("UPDATE usuarios SET ci = ? WHERE id = ?", [ci, newUser.id]);
+        }
+
+        await connection.query(
+            "INSERT INTO propietarios (usuario_id, telefono, direccion) VALUES (?, ?, ?)",
+            [newUser.id, telefono || null, direccion || null]
+        );
+
+        await connection.commit();
+      } catch (err) {
+        await connection.rollback();
+        console.error("Error al guardar datos extra del propietario:", err);
+      } finally {
+        connection.release();
+      }
+    }
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente.',
@@ -42,7 +65,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
   }
 };
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
