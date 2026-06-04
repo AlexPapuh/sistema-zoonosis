@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 
 exports.register = async (req, res) => {
   try {
-    const { nombre, email, password, rol, ci, telefono, direccion } = req.body;
+    const { nombre, email, password, rol, ci, telefono, direccion, distrito, latitud, longitud } = req.body;
 
     if (!nombre || !email || !password || !rol) {
       return res.status(400).json({ message: 'Todos los campos básicos son requeridos.' });
@@ -37,8 +37,8 @@ exports.register = async (req, res) => {
         }
 
         await connection.query(
-            "INSERT INTO propietarios (usuario_id, telefono, direccion) VALUES (?, ?, ?)",
-            [newUser.id, telefono || null, direccion || null]
+            "INSERT INTO propietarios (usuario_id, telefono, direccion, distrito, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?)",
+            [newUser.id, telefono || null, direccion || null, distrito || null, latitud || null, longitud || null]
         );
 
         await connection.commit();
