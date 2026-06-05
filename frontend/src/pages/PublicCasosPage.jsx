@@ -224,9 +224,9 @@ const PublicCasosPage = () => {
 
                         return (
                             <Marker key={caso.id} position={[lat, lng]} icon={getIcon(caso.tipo)}>
-                                <Popup>
-                                    {/* CORRECCIÓN: w-56 en móvil y w-64 en PC, asegurando que la caja de Leaflet no colapse y rompa los bordes */}
-                                    <div className="w-56 sm:w-64 pt-2">
+                                {/* CORRECCIÓN: Le decimos a Leaflet el ancho mínimo y máximo para que la burbuja blanca siempre envuelva el contenido */}
+                                <Popup minWidth={220} maxWidth={280}>
+                                    <div className="w-full pt-1 box-border">
                                         <div className="inline-flex items-center text-[10px] text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md mb-2 max-w-full">
                                             <User className="w-3 h-3 mr-1 shrink-0"/> 
                                             <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
@@ -236,14 +236,13 @@ const PublicCasosPage = () => {
                                         <ExpandableText text={caso.descripcion} />
                                         
                                         {caso.foto && (
-                                            <div className="w-full h-32 my-2 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
-                                                <img src={caso.foto} alt="caso" className="w-full h-full object-contain" />
+                                            <div className="w-full h-32 my-2 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden box-border">
+                                                <img src={caso.foto} alt="caso" className="max-w-full h-full object-contain" />
                                             </div>
                                         )}
                                         
-                                        {/* CORRECCIÓN: flex w-full con overflow-hidden para que jamás desborde el límite */}
                                         {caso.telefono_reporte && (
-                                            <div className="flex items-center text-xs text-green-700 font-bold mt-2 bg-green-50 px-2.5 py-2 rounded-lg border border-green-200 w-full overflow-hidden">
+                                            <div className="flex items-center text-xs text-green-700 font-bold mt-2 bg-green-50 px-2.5 py-2 rounded-lg border border-green-200 w-full overflow-hidden box-border">
                                                 <Phone className="w-3.5 h-3.5 mr-2 shrink-0"/> 
                                                 <span className="truncate">{caso.telefono_reporte}</span>
                                             </div>
@@ -287,7 +286,7 @@ const PublicCasosPage = () => {
                              <div className="flex gap-3 md:gap-4">
                                  {caso.foto ? (
                                      <div className="w-16 h-16 md:w-20 md:h-20 bg-white border border-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                         <img src={caso.foto} alt="mini" className="w-full h-full object-contain" />
+                                         <img src={caso.foto} alt="mini" className="w-full h-full object-cover" />
                                      </div>
                                  ) : (
                                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -330,19 +329,19 @@ const PublicCasosPage = () => {
           <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
             <div className="relative w-full max-w-2xl bg-white sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl max-h-[90vh] sm:max-h-[95vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
                 
-                <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
+                <div className="flex-shrink-0 p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
                     <button onClick={() => setShowModal(false)} className="bg-gray-100 p-1.5 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
-                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 md:space-y-4 custom-scrollbar">
-                    <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 pb-2">
+                <div className="overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5 custom-scrollbar">
+                    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 pb-4">
                         
-                        <div className="bg-blue-50 p-2.5 sm:p-4 rounded-xl border border-blue-100">
-                            <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-blue-800 mb-2 sm:mb-3 flex items-center"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2"/> Tus Datos</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <div className="bg-blue-50 p-3 sm:p-4 rounded-xl border border-blue-100">
+                            <h3 className="text-xs md:text-sm font-bold text-blue-800 mb-3 flex items-center"><User className="w-4 h-4 mr-2"/> Tus Datos de Contacto</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tu Nombre</label>
                                     <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" value={formData.nombre_contacto} onChange={handleInputChange}/>
@@ -354,7 +353,7 @@ const PublicCasosPage = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tipo de Reporte</label>
                                 <select name="tipo" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" value={formData.tipo} onChange={handleInputChange}>
