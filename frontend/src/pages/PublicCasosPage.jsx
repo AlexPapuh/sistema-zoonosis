@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import casoService from '../services/caso.service.js';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
@@ -29,38 +29,50 @@ const getIcon = (tipo) => {
     });
 };
 
+// 🛡️ REFUERZO 1: Obliga al mapa a redibujarse en múltiples tiempos al abrirse
 const MapFix = () => {
     const map = useMap();
     useEffect(() => {
-        map.invalidateSize();
-        const resizeObserver = new ResizeObserver(() => { map.invalidateSize(); });
-        resizeObserver.observe(map.getContainer());
-        return () => resizeObserver.disconnect();
+        const timers = [
+            setTimeout(() => map.invalidateSize(), 100),
+            setTimeout(() => map.invalidateSize(), 400),
+            setTimeout(() => map.invalidateSize(), 800)
+        ];
+        return () => timers.forEach(clearTimeout);
     }, [map]);
     return null;
 };
 
-// 🛡️ ESCUDO ANTI-CRASH PARA EL MAPA 🛡️
+// 🛡️ REFUERZO 2: Bloqueo absoluto de animaciones cuando el mapa es inestable
 const FlyToLocation = ({ center }) => {
     const map = useMap();
+    const isFirstRender = useRef(true); // Memoria para saber si recién abrió la página
+
     useEffect(() => { 
+        // Si es la primera vez que carga la página, IGNORAMOS el vuelo. 
+        // Esto evita el choque letal cuando el contenedor aún mide 0px.
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         if (!center || !Array.isArray(center)) return;
         
         const lat = parseFloat(center[0]);
         const lng = parseFloat(center[1]);
         
         if (!isNaN(lat) && !isNaN(lng)) {
-            const mapSize = map.getSize();
-            if (mapSize.x === 0 || mapSize.y === 0) {
-                map.setView([lat, lng], 16);
-                return;
-            }
-            try {
-                map.flyTo([lat, lng], 16, { duration: 1.5 }); 
-            } catch (error) {
-                console.warn("Error en animación Leaflet. Usando fallback setView.");
-                map.setView([lat, lng], 16);
-            }
+            // Un pequeño retraso para asegurar que el DOM terminó de pintar flex/grids
+            setTimeout(() => {
+                const mapSize = map.getSize();
+                // Solo vuela de forma animada si estamos 100% seguros de que el mapa tiene tamaño físico real
+                if (mapSize.x > 0 && mapSize.y > 0) {
+                    map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+                } else {
+                    // Si el mapa sigue encogido, teletransporte silencioso sin animaciones peligrosas
+                    map.setView([lat, lng], 16);
+                }
+            }, 50);
         }
     }, [center, map]);
     return null;
@@ -324,9 +336,7 @@ const PublicCasosPage = () => {
          )}
       </div>
 
-      {/* MODAL DE NUEVO REPORTE MÁS COMPACTO PARA MÓVIL */}
       {showModal && (
-          // CORRECCIÓN Z-INDEX: Reducido a z-[1000] para que los mensajes de SweetAlert (z-1060) se vean por encima.
           <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
             <div className="relative w-full max-w-2xl bg-white sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl max-h-[90vh] sm:max-h-[95vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
                 
@@ -337,7 +347,6 @@ const PublicCasosPage = () => {
                     </button>
                 </div>
 
-                {/* Padding y márgenes más compactos para celular */}
                 <div className="overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 md:space-y-4 custom-scrollbar">
                     <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 pb-2">
                         
@@ -388,7 +397,6 @@ const PublicCasosPage = () => {
                         <div>
                             <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
                             <p className="text-[10px] text-blue-600 font-semibold mb-1.5">Toca el mapa para dejar caer el marcador rojo 📍</p>
-                            {/* Altura del mapa súper reducida (h-28) en celular */}
                             <div className="h-28 sm:h-40 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-sm relative z-0">
                                 <div className="absolute inset-0">
                                     <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
