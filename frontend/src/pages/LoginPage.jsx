@@ -111,7 +111,8 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 font-sans">
       
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-white/50 relative overflow-hidden">
+      {/* Cambio principal: p-6 en móvil, p-8 en PC. Bordes un poco menos redondeados en móvil */}
+      <div className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/50 relative overflow-hidden">
         
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
 
@@ -129,31 +130,32 @@ const LoginPage = () => {
            {view === 'login' ? 'Volver al Inicio' : 'Volver al Login'}
         </button>
 
-        <div className="text-center mb-8">
-           <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-4 shadow-sm">
-              <ShieldCheck className="w-10 h-10" />
+        <div className="text-center mb-6 sm:mb-8">
+           <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-3 sm:mb-4 shadow-sm">
+              <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10" />
            </div>
-           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+           <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
              {view === 'login' ? 'Iniciar Sesión' : 'Recuperar Cuenta'}
            </h1>
-           <p className="text-gray-500 mt-2 text-sm">
+           <p className="text-gray-500 mt-2 text-xs sm:text-sm">
              {view === 'login' ? 'Accede al Sistema de Zoonosis' : 'Sigue los pasos para restablecer'}
            </p>
         </div>
 
         {view === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+          <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Correo Electrónico
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Mail className="text-gray-400 w-5 h-5 mr-3" />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Mail className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                {/* Inputs ajustados a text-sm en móvil y text-base en PC */}
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-medium"
+                  className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base"
                   required
                 />
               </div>
@@ -166,29 +168,29 @@ const LoginPage = () => {
                   </label>
               </div>
               
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Lock className="text-gray-400 w-5 h-5 mr-3" />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Lock className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-medium"
+                  className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base"
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-blue-600">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-blue-600 shrink-0 ml-2">
                   {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
                 </button>
               </div>
               <div className="text-right mt-2">
-                <button type="button" onClick={() => setView('forgot')} className="text-xs font-bold text-blue-600 hover:text-blue-800">
+                <button type="button" onClick={() => setView('forgot')} className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm animate-in fade-in slide-in-from-top-1">
-                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="flex items-center gap-2 sm:gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-xs sm:text-sm animate-in fade-in slide-in-from-top-1">
+                 <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                  <span>{error}</span>
               </div>
             )}
@@ -196,10 +198,10 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] flex justify-center items-center"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] flex justify-center items-center"
             >
               {loading ? (
-                <span className="flex items-center">
+                <span className="flex items-center text-sm sm:text-base">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -207,38 +209,38 @@ const LoginPage = () => {
                   Ingresando...
                 </span>
               ) : (
-                <>
+                <span className="flex items-center text-sm sm:text-base">
                   Ingresar <LogIn className="w-5 h-5 ml-2" />
-                </>
+                </span>
               )}
             </button>
           </form>
         )}
 
         {view === 'forgot' && (
-          <form onSubmit={handleRequestCode} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <p className="text-sm text-gray-600 text-center px-4">
+          <form onSubmit={handleRequestCode} className="space-y-5 sm:space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <p className="text-xs sm:text-sm text-gray-600 text-center px-2 sm:px-4">
                Ingresa tu correo electrónico y te enviaremos un código de verificación.
               </p>
               <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Correo Electrónico
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Mail className="text-gray-400 w-5 h-5 mr-3" />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Mail className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-medium"
+                  className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base"
                   required
                 />
               </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm">
-                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="flex items-center gap-2 sm:gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-xs sm:text-sm">
+                 <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                  <span>{error}</span>
               </div>
             )}
@@ -246,7 +248,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] flex justify-center items-center"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] flex justify-center items-center text-sm sm:text-base"
             >
                {loading ? 'Enviando...' : <>Enviar Código <Send className="w-4 h-4 ml-2"/></>}
             </button>
@@ -255,23 +257,23 @@ const LoginPage = () => {
 
         {view === 'reset' && (
           <form onSubmit={handleResetPassword} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-             <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg text-center border border-blue-100 mb-2">
-                Código enviado a <b>{email}</b>
+             <div className="bg-blue-50 text-blue-800 text-xs sm:text-sm p-3 rounded-lg text-center border border-blue-100 mb-2">
+                Código enviado a <b className="break-all">{email}</b>
              </div>
              
              <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Código de Verificación
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <KeyRound className="text-gray-400 w-5 h-5 mr-3" />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <KeyRound className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
                 <input
                   type="text"
                   maxLength={6}
                   placeholder="000000"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-mono text-lg tracking-widest text-center"
+                  className="w-full bg-transparent outline-none text-gray-700 font-mono text-base sm:text-lg tracking-widest text-center"
                   required
                 />
               </div>
@@ -282,17 +284,17 @@ const LoginPage = () => {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Nueva Contraseña
               </label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Lock className="text-gray-400 w-5 h-5 mr-3" />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Lock className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-medium"
+                  className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base"
                   required
                   placeholder="Mínimo 6 caracteres"
                 />
-                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-blue-600">
+                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-blue-600 shrink-0 ml-2">
                   {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
                 </button>
               </div>
@@ -302,17 +304,17 @@ const LoginPage = () => {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">
                 Confirmar Contraseña
               </label>
-              <div className={`flex items-center bg-gray-50 border rounded-xl px-4 py-3 focus-within:ring-2 transition-all shadow-sm 
+              <div className={`flex items-center bg-gray-50 border rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 transition-all shadow-sm 
                     ${confirmPassword && newPassword !== confirmPassword 
                         ? 'border-red-300 focus-within:ring-red-500 bg-red-50' 
                         : 'border-gray-200 focus-within:ring-blue-500 focus-within:bg-white'}`
               }>
-                <CheckCircle className={`w-5 h-5 mr-3 ${confirmPassword && newPassword === confirmPassword ? 'text-green-500' : 'text-gray-400'}`} />
+                <CheckCircle className={`w-5 h-5 mr-3 shrink-0 ${confirmPassword && newPassword === confirmPassword ? 'text-green-500' : 'text-gray-400'}`} />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-transparent outline-none text-gray-700 font-medium"
+                  className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base"
                   required
                   placeholder="Repite la contraseña"
                 />
@@ -323,8 +325,8 @@ const LoginPage = () => {
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm">
-                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div className="flex items-center gap-2 sm:gap-3 bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-xs sm:text-sm">
+                 <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                  <span>{error}</span>
               </div>
             )}
@@ -332,7 +334,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:scale-[1.02] flex justify-center items-center"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 sm:py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:scale-[1.02] flex justify-center items-center text-sm sm:text-base mt-2"
             >
                {loading ? 'Actualizando...' : 'Cambiar Contraseña'}
             </button>
@@ -340,11 +342,11 @@ const LoginPage = () => {
         )}
 
         {view === 'login' && (
-           <div className="text-center mt-8 pt-6 border-t border-gray-100">
-              <p className="text-sm text-gray-500 mb-2">¿Aún no tienes cuenta?</p>
+           <div className="text-center mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-gray-100">
+              <p className="text-xs sm:text-sm text-gray-500 mb-2">¿Aún no tienes cuenta?</p>
               <Link 
                 to="/register" 
-                className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors text-sm"
+                className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors text-xs sm:text-sm"
               >
                 Crear Cuenta Nueva
               </Link>

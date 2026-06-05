@@ -153,62 +153,63 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden p-8 border border-gray-100">
+      {/* Reducción de padding en móviles: p-5 sm:p-8 */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden p-5 sm:p-8 border border-gray-100">
           
           <div className="flex justify-between items-center mb-6">
             <Link to="/" className="inline-flex items-center text-gray-400 hover:text-blue-600 transition-colors text-sm font-semibold group">
-               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-               Volver
+               <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2 group-hover:-translate-x-1 transition-transform" />
+               <span className="hidden sm:inline">Volver</span>
             </Link>
-            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Crear Cuenta</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Crear Cuenta</h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             
             <div className="group">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Nombre Completo</label>
-                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                  <User className="text-gray-400 w-5 h-5 mr-3" />
-                  <input type="text" name="nombre" required className="w-full bg-transparent outline-none text-gray-700 font-medium" onChange={handleChange} />
+                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                  <User className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                  <input type="text" name="nombre" required className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base" onChange={handleChange} />
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
-             
+            {/* AQUI ESTÁ EL CAMBIO CLAVE: grid-cols-1 sm:grid-cols-2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Cédula de Identidad</label>
-                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                  <FileText className="text-gray-400 w-5 h-5 mr-3" />
-                  <input type="text" name="ci" required className="w-full bg-transparent outline-none text-gray-700 font-medium" onChange={handleChange} />
+                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                  <FileText className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                  <input type="text" name="ci" required className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base" onChange={handleChange} />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Celular</label>
-                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                  <Phone className="text-gray-400 w-5 h-5 mr-3" />
-                  <input type="text" name="telefono" required className="w-full bg-transparent outline-none text-gray-700 font-medium" onChange={handleChange} />
+                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                  <Phone className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                  <input type="text" name="telefono" required className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base" onChange={handleChange} />
                 </div>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Correo Electrónico</label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Mail className="text-gray-400 w-5 h-5 mr-3" />
-                <input type="email" name="email" required className="w-full bg-transparent outline-none text-gray-700 font-medium" onChange={handleChange} />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Mail className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                <input type="email" name="email" required className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base" onChange={handleChange} />
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Contraseña</label>
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
-                <Lock className="text-gray-400 w-5 h-5 mr-3" />
-                <input type="password" name="password" required className="w-full bg-transparent outline-none text-gray-700 font-medium" onChange={handleChange} />
+              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm">
+                <Lock className="text-gray-400 w-5 h-5 mr-3 shrink-0" />
+                <input type="password" name="password" required className="w-full bg-transparent outline-none text-gray-700 font-medium text-sm sm:text-base" onChange={handleChange} />
               </div>
             </div>
 
             <div className="pt-4 border-t border-gray-100">
-               <div className="flex items-center justify-between mb-2">
+               <div className="flex items-center justify-between mb-3">
                  <h3 className="text-sm font-bold text-gray-800 flex items-center"><MapPin className="w-4 h-4 mr-2 text-blue-600"/> Domicilio</h3>
                  
                  <button 
@@ -227,7 +228,7 @@ const RegisterPage = () => {
                       value={form.distrito}
                       onChange={handleChange}
                       required
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
                   >
                       <option value="" disabled>-- Selecciona tu distrito --</option>
                       <optgroup label="🏢 Distritos Urbanos">
@@ -249,18 +250,18 @@ const RegisterPage = () => {
                   type="text" 
                   name="direccion" 
                   required 
-                  placeholder="Ej. Calle Tarija, Barrio Central"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all mb-3" 
+                  placeholder=""
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all mb-3" 
                   onChange={handleChange} 
                />
 
                {showMap && (
                  <div className="relative animate-in fade-in slide-in-from-top-4 duration-300">
-                   <div className="h-64 w-full rounded-2xl overflow-hidden border-2 border-blue-500 shadow-lg relative">
+                   <div className="h-48 sm:h-64 w-full rounded-2xl overflow-hidden border-2 border-blue-500 shadow-lg relative">
                       <div ref={mapRef} className="w-full h-full z-0 cursor-crosshair" />
                       
                       <div className="absolute top-2 left-2 z-[400] bg-white/90 backdrop-blur px-2 py-1 rounded-md shadow-sm border border-gray-200">
-                        <p className="text-[10px] text-blue-700 font-mono font-bold">
+                        <p className="text-[10px] sm:text-xs text-blue-700 font-mono font-bold">
                            {form.latitud.toFixed(4)}, {form.longitud.toFixed(4)}
                         </p>
                       </div>
@@ -270,7 +271,7 @@ const RegisterPage = () => {
                )}
             </div>
 
-            <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.01] flex justify-center items-center mt-4">
+            <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.01] flex justify-center items-center mt-4">
               {loading ? 'Procesando...' : <>Registrarme <CheckCircle2 className="w-5 h-5 ml-2"/></>}
             </button>
 

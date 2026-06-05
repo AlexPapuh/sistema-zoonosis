@@ -46,7 +46,7 @@ const colorMap = {
 
 const WelcomePage = () => {
   const [openSection, setOpenSection] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ESTADO PARA EL MENÚ MÓVIL
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   
   const [horario, setHorario] = useState({
       diasTexto: "Cargando...",
@@ -62,7 +62,7 @@ const WelcomePage = () => {
     const element = document.getElementById(id);
     if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
-        setIsMobileMenuOpen(false); // Cierra el menú móvil al hacer clic
+        setIsMobileMenuOpen(false); 
     }
   };
 
