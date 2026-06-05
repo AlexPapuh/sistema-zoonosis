@@ -34,7 +34,6 @@ const ChatbotWidget = () => {
     setIsLoading(true);
 
     try {
-      // 2. Enviamos el mensaje a tu Backend
       const response = await fetch('https://zoonosispotosi.site/api/chatbot/chat', {
         method: 'POST',
         headers: {
@@ -47,7 +46,6 @@ const ChatbotWidget = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 3. Mostramos la respuesta del bot
         setMessages(prev => [...prev, { text: data.respuesta, sender: 'bot' }]);
       } else {
         setMessages(prev => [...prev, { text: "Hubo un problemita de conexión. Intenta de nuevo.", sender: 'bot', error: true }]);
@@ -60,14 +58,11 @@ const ChatbotWidget = () => {
     }
   };
 
-  // Función para formatear negritas (**) y viñetas (•)
   const formatMessage = (text) => {
     if (!text) return null;
     return text.split('**').map((part, index) => {
-      // Reemplazamos los "* " o " * " por "• " para las listas elegantes
       const cleanPart = part.replace(/\*\s?/g, '• ');
       
-      // Las partes impares son las que estaban entre **
       return index % 2 === 1 ? <strong key={index} className="font-bold text-gray-900">{cleanPart}</strong> : cleanPart;
     });
   };
@@ -75,14 +70,11 @@ const ChatbotWidget = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       
-      {/* Ventana del Chat */}
       {isOpen && (
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 sm:w-96 h-[500px] flex flex-col mb-4 overflow-hidden transition-all duration-300 transform origin-bottom-right">
           
-          {/* Cabecera */}
           <div className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md">
             <div className="flex items-center space-x-2">
-              {/* Icono de Mascota Robot */}
               <Bot className="w-6 h-6 text-blue-100" />
               <div>
                 <h3 className="font-bold text-sm">Asistente Zoonosis 🤖</h3>
@@ -96,7 +88,6 @@ const ChatbotWidget = () => {
             </button>
           </div>
 
-          {/* Área de Mensajes */}
           <div className="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col space-y-4 text-sm">
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -123,7 +114,6 @@ const ChatbotWidget = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input de Texto */}
           <div className="p-3 bg-white border-t border-gray-100">
             <form onSubmit={handleSendMessage} className="flex items-center space-x-2 relative">
               <input
@@ -146,13 +136,11 @@ const ChatbotWidget = () => {
         </div>
       )}
 
-      {/* Botón Flotante con Icono de Mascota Robot (Sin Pulso) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
         >
-          {/* Icono de Mascota Robot estilizado */}
           <Bot className="w-8 h-8" />
         </button>
       )}

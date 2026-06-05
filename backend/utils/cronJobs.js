@@ -36,7 +36,7 @@ const iniciarTareasProgramadas = () => {
                         const enviado = await enviarMensaje(registro.telefono, mensaje);
                         
                         if (enviado) {
-                            await db.query('UPDATE animal_vacunas SET notificado = 15 WHERE id = ?', [registro.id]);
+                            await db.query('UPDATE animal_vacunas SET notificado = 1 WHERE id = ?', [registro.id]);
                             console.log(`📨 Enviado a ${registro.propietario}`);
                         }
                     }

@@ -1,9 +1,12 @@
 'use strict';
 const dialogflow = require('@google-cloud/dialogflow');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const path = require('path'); 
 
 const projectId = process.env.DIALOGFLOW_PROJECT_ID;
+
 const sessionClient = new dialogflow.SessionsClient();
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 let sesionesActivas = {};
@@ -24,6 +27,7 @@ setInterval(() => {
         console.log(`[LIMPIEZA RAM] Se eliminaron ${sesionesBorradas} sesiones inactivas.`);
     }
 }, 15 * 60 * 1000);
+
 exports.detectIntent = async (req, res) => {
   try {
     const { text } = req.body;
