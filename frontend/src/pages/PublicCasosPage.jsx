@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import casoService from '../services/caso.service.js';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
@@ -29,50 +29,37 @@ const getIcon = (tipo) => {
     });
 };
 
-// 🛡️ REFUERZO 1: Obliga al mapa a redibujarse en múltiples tiempos al abrirse
 const MapFix = () => {
     const map = useMap();
     useEffect(() => {
-        const timers = [
-            setTimeout(() => map.invalidateSize(), 100),
-            setTimeout(() => map.invalidateSize(), 400),
-            setTimeout(() => map.invalidateSize(), 800)
-        ];
-        return () => timers.forEach(clearTimeout);
+        map.invalidateSize();
+        const resizeObserver = new ResizeObserver(() => { map.invalidateSize(); });
+        resizeObserver.observe(map.getContainer());
+        return () => resizeObserver.disconnect();
     }, [map]);
     return null;
 };
 
-// 🛡️ REFUERZO 2: Bloqueo absoluto de animaciones cuando el mapa es inestable
 const FlyToLocation = ({ center }) => {
     const map = useMap();
-    const isFirstRender = useRef(true); // Memoria para saber si recién abrió la página
-
     useEffect(() => { 
-        // Si es la primera vez que carga la página, IGNORAMOS el vuelo. 
-        // Esto evita el choque letal cuando el contenedor aún mide 0px.
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-
         if (!center || !Array.isArray(center)) return;
         
         const lat = parseFloat(center[0]);
         const lng = parseFloat(center[1]);
         
         if (!isNaN(lat) && !isNaN(lng)) {
-            // Un pequeño retraso para asegurar que el DOM terminó de pintar flex/grids
-            setTimeout(() => {
-                const mapSize = map.getSize();
-                // Solo vuela de forma animada si estamos 100% seguros de que el mapa tiene tamaño físico real
-                if (mapSize.x > 0 && mapSize.y > 0) {
-                    map.flyTo([lat, lng], 16, { duration: 1.5 }); 
-                } else {
-                    // Si el mapa sigue encogido, teletransporte silencioso sin animaciones peligrosas
-                    map.setView([lat, lng], 16);
-                }
-            }, 50);
+            const mapSize = map.getSize();
+            if (mapSize.x === 0 || mapSize.y === 0) {
+                map.setView([lat, lng], 16);
+                return;
+            }
+            try {
+                map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+            } catch (error) {
+                console.warn("Error en animación Leaflet. Usando fallback setView.");
+                map.setView([lat, lng], 16);
+            }
         }
     }, [center, map]);
     return null;
@@ -247,14 +234,15 @@ const PublicCasosPage = () => {
                                         <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
                                         <ExpandableText text={caso.descripcion} />
                                         
+                                        {/* CORRECCIÓN DE LA FOTO DESBORDADA: min-h-[140px] reserva el espacio */}
                                         {caso.foto && (
-                                            <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
-                                                <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
+                                            <div className="w-full min-h-[140px] mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
+                                                <img src={caso.foto} alt="caso" className="w-full h-32 object-contain" />
                                             </div>
                                         )}
                                         
                                         {caso.telefono_reporte && (
-                                            <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
+                                            <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full box-border">
                                                 <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
                                             </div>
                                         )}
@@ -297,7 +285,7 @@ const PublicCasosPage = () => {
                              <div className="flex gap-3 md:gap-4">
                                  {caso.foto ? (
                                      <div className="w-16 h-16 md:w-20 md:h-20 bg-white border border-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                         <img src={caso.foto} alt="mini" className="w-full h-full object-contain" />
+                                         <img src={caso.foto} alt="mini" className="w-full h-full object-cover" />
                                      </div>
                                  ) : (
                                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -337,22 +325,22 @@ const PublicCasosPage = () => {
       </div>
 
       {showModal && (
-          <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
+          <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
             <div className="relative w-full max-w-2xl bg-white sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl max-h-[90vh] sm:max-h-[95vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
                 
-                <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
+                <div className="flex-shrink-0 p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
                     <button onClick={() => setShowModal(false)} className="bg-gray-100 p-1.5 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
-                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 md:space-y-4 custom-scrollbar">
-                    <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 pb-2">
+                <div className="overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5 custom-scrollbar">
+                    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 pb-4">
                         
-                        <div className="bg-blue-50 p-2.5 sm:p-4 rounded-xl border border-blue-100">
-                            <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-blue-800 mb-2 sm:mb-3 flex items-center"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2"/> Tus Datos</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <div className="bg-blue-50 p-3 sm:p-4 rounded-xl border border-blue-100">
+                            <h3 className="text-xs md:text-sm font-bold text-blue-800 mb-3 flex items-center"><User className="w-4 h-4 mr-2"/> Tus Datos de Contacto</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tu Nombre</label>
                                     <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" value={formData.nombre_contacto} onChange={handleInputChange}/>
@@ -364,7 +352,7 @@ const PublicCasosPage = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tipo de Reporte</label>
                                 <select name="tipo" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" value={formData.tipo} onChange={handleInputChange}>
@@ -386,18 +374,18 @@ const PublicCasosPage = () => {
                         
                         <div>
                             <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><Camera className="w-3 h-3 md:w-4 md:h-4 mr-1 text-gray-400"/> Subir Foto (Opcional)</label>
-                            <input type="file" accept="image/*" className="block w-full text-xs md:text-sm text-gray-500 file:mr-3 file:py-1.5 sm:file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer border border-gray-200 rounded-lg p-1" onChange={handleFileChange} />
+                            <input type="file" accept="image/*" className="block w-full text-xs md:text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer border border-gray-200 rounded-lg p-1" onChange={handleFileChange} />
                             {previewImage && (
-                                <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-1.5 sm:p-2 inline-flex justify-center w-full sm:w-auto">
-                                    <img src={previewImage} alt="Preview" className="h-24 sm:h-32 object-contain rounded" />
+                                <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2 inline-flex justify-center w-full sm:w-auto">
+                                    <img src={previewImage} alt="Preview" className="h-28 sm:h-32 object-contain rounded" />
                                 </div>
                             )}
                         </div>
 
                         <div>
                             <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
-                            <p className="text-[10px] text-blue-600 font-semibold mb-1.5">Toca el mapa para dejar caer el marcador rojo 📍</p>
-                            <div className="h-28 sm:h-40 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-sm relative z-0">
+                            <p className="text-[10px] text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
+                            <div className="h-32 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-sm relative z-0">
                                 <div className="absolute inset-0">
                                     <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
                                         <MapFix /> 
@@ -412,13 +400,13 @@ const PublicCasosPage = () => {
                         <button 
                             type="submit" 
                             disabled={isSubmitting}
-                            className={`w-full text-white py-2.5 sm:py-3.5 rounded-xl text-sm sm:text-base font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center mt-2 ${
+                            className={`w-full text-white py-3 sm:py-4 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center mt-2 ${
                                 isSubmitting ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-red-600 hover:bg-red-700 shadow-red-500/30'
                             }`}
                         >
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                     Publicando...
                                 </>
                             ) : (
