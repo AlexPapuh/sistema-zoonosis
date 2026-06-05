@@ -13,11 +13,12 @@ exports.descargarBackup = (req, res) => {
     const filePath = path.join(backupFolder, fileName);
 
     const dbUser = process.env.DB_USER || 'root';
-    const dbPass = process.env.DB_PASSWORD ? `-p${process.env.DB_PASSWORD}` : ''; 
+    const dbPass = process.env.DB_PASSWORD ? `-p"${process.env.DB_PASSWORD}"` : ''; 
     const dbName = process.env.DB_NAME || 'veterinaria_db'; 
 
     const mysqldumpPath = 'mysqldump';
-    const cmd = `${mysqldumpPath} -u ${dbUser} ${dbPass} ${dbName} > "${filePath}"`;
+    
+    const cmd = `${mysqldumpPath} -u ${dbUser} ${dbPass} --single-transaction --quick --lock-tables=false ${dbName} > "${filePath}"`;
     
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
