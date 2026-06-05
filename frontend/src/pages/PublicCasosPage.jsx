@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import casoService from '../services/caso.service.js';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
-import { AlertTriangle, Plus, X, Camera, MapPin, List, User, Phone, ArrowLeft, Search } from 'lucide-react'; 
+import { AlertTriangle, Plus, X, Camera, MapPin, List, User, Phone, ArrowLeft, Search, ChevronUp, ChevronDown } from 'lucide-react'; 
 import L from 'leaflet';
 import Swal from 'sweetalert2';
 import 'leaflet/dist/leaflet.css';
@@ -59,6 +59,7 @@ const PublicCasosPage = () => {
   const [filtro, setFiltro] = useState('Todos');
 
   const [showModal, setShowModal] = useState(false);
+  const [showMobileList, setShowMobileList] = useState(false); // Estado para el menú desplegable de la lista
   
   const [formData, setFormData] = useState({
       titulo: '', descripcion: '', tipo: 'Mascota Perdida', latitud: '', longitud: '', foto: '',
@@ -114,89 +115,111 @@ const PublicCasosPage = () => {
       return 'border-orange-200 bg-orange-50 hover:border-orange-400';
   };
 
+  const handleVerEnMapa = (latitud, longitud) => {
+      setMapCenter([latitud, longitud]);
+      setShowMobileList(false); // Cierra la lista en móvil al seleccionar uno
+  };
+
   return (
-    // CAMBIO 1: h-[calc(100dvh-80px)] asegura que ocupe el alto de la pantalla incluso en Safari Móvil
-    <div className="container mx-auto h-[calc(100dvh-80px)] flex flex-col p-2 sm:p-4">
+    // Altura controlada rígidamente para forzar al mapa a renderizar
+    <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col pt-2 md:pt-4 px-0 md:px-4 overflow-hidden relative">
       
-      <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 flex-shrink-0 border-b border-gray-200 pb-3">
+      {/* HEADER */}
+      <div className="mb-2 md:mb-3 flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-3 flex-shrink-0 px-2 md:px-0">
         <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center">
                 <AlertTriangle className="mr-2 md:mr-3 text-red-500 h-6 w-6 md:h-8 md:w-8 shrink-0" />
                 Mapa de Alertas
             </h1>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-             <button onClick={() => navigate('/')} className="flex-1 sm:flex-none flex justify-center items-center px-3 py-2 md:px-4 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm">
-                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2"/> <span className="hidden sm:inline">Volver</span>
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 hide-scrollbar">
+             <button onClick={() => navigate('/')} className="flex-shrink-0 flex justify-center items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg shadow-sm hover:bg-gray-50 transition-all text-sm">
+                <ArrowLeft className="w-4 h-4 mr-1 md:mr-2"/> <span className="hidden sm:inline">Volver</span>
              </button>
 
-             <select className="flex-[2] sm:flex-none border border-gray-300 rounded-lg p-2 text-xs md:text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none" value={filtro} onChange={(e) => setFiltro(e.target.value)}>
+             <select className="flex-shrink-0 border border-gray-300 rounded-lg px-2 py-2 text-xs md:text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none" value={filtro} onChange={(e) => setFiltro(e.target.value)}>
                  <option value="Todos">Todos</option>
                  <option value="Mascota Perdida">🔴 Perdidos</option>
                  <option value="Mascota Encontrada">🟢 Encontrados</option>
                  <option value="Caso Zoonosis">🟠 Zoonosis</option>
              </select>
              
-             <button onClick={() => setShowModal(true)} className="flex-1 sm:flex-none flex justify-center items-center bg-red-600 text-white px-3 py-2 md:px-4 rounded-lg font-bold hover:bg-red-700 shadow-md transition-all text-sm">
-                 <Plus className="w-4 h-4 mr-1 sm:mr-2"/> Reportar
+             <button onClick={() => setShowModal(true)} className="flex-shrink-0 flex justify-center items-center bg-red-600 text-white px-3 py-2 rounded-lg font-bold hover:bg-red-700 shadow-md transition-all text-sm">
+                 <Plus className="w-4 h-4 mr-1"/> Reportar
              </button>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-gray-300 shadow-xl bg-white min-h-0">
+      {/* CONTENEDOR PRINCIPAL: MAPA + LISTA */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-t-xl md:rounded-xl border border-gray-300 shadow-xl bg-white relative z-0">
           
-          {/* CAMBIO 2: h-[45%] asegura que el mapa SIEMPRE ocupe casi la mitad superior del celular */}
-          <div className="w-full h-[45%] md:h-full md:flex-1 relative z-0 bg-gray-100 flex-shrink-0">
-              <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
-                <MapFix /> 
-                <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
-                <FlyToLocation center={mapCenter} />
+          {/* EL MAPA: Ocupa el 100% del espacio disponible */}
+          <div className="flex-1 relative h-full w-full bg-gray-100 z-0">
+              {/* Para arreglar el "mapa gris", Leaflet necesita absolute inset-0 */}
+              <div className="absolute inset-0">
+                  <MapContainer center={mapCenter} zoom={14} style={{ height: '100%', width: '100%' }}>
+                    <MapFix /> 
+                    <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+                    <FlyToLocation center={mapCenter} />
 
-                {casosFiltrados.map(caso => (
-                    <Marker key={caso.id} position={[caso.latitud, caso.longitud]} icon={getIcon(caso.tipo)}>
-                        <Popup>
-                            {/* CAMBIO 3: min-w y pt-3 evitan que los textos largos rompan el popup y no pisan la X */}
-                            <div className="min-w-[200px] max-w-[260px] pt-3 pr-2">
-                                <div className="inline-flex items-center text-[10px] text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md mb-2 max-w-full">
-                                    <User className="w-3 h-3 mr-1 shrink-0"/> 
-                                    <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
+                    {casosFiltrados.map(caso => (
+                        <Marker key={caso.id} position={[caso.latitud, caso.longitud]} icon={getIcon(caso.tipo)}>
+                            <Popup>
+                                <div className="min-w-[200px] max-w-[260px] pt-3 pr-2">
+                                    <div className="inline-flex items-center text-[10px] text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md mb-2 max-w-full">
+                                        <User className="w-3 h-3 mr-1 shrink-0"/> 
+                                        <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
+                                    </div>
+                                    <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
+                                    <p className="text-xs text-gray-600 mt-1 mb-2 line-clamp-3">{caso.descripcion}</p>
+                                    {caso.foto && (
+                                        <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
+                                            <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
+                                        </div>
+                                    )}
+                                    {caso.telefono_reporte && (
+                                        <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
+                                            <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
+                                        </div>
+                                    )}
                                 </div>
-                                
-                                <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
-                                <p className="text-xs text-gray-600 mt-1 mb-2 line-clamp-3">{caso.descripcion}</p>
-                                
-                                {/* Contenedor de altura fija para la foto, sin deformar la imagen */}
-                                {caso.foto && (
-                                    <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
-                                        <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
-                                    </div>
-                                )}
-                                
-                                {caso.telefono_reporte && (
-                                    <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
-                                        <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
-                                    </div>
-                                )}
-                            </div>
-                        </Popup>
-                    </Marker>
-                ))}
-             </MapContainer>
+                            </Popup>
+                        </Marker>
+                    ))}
+                 </MapContainer>
+              </div>
          </div>
 
-         {/* CAMBIO 4: flex-1 y min-h-0 le dicen a la lista que tome todo el resto del espacio hacia abajo */}
-         <div className="w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 flex-1 min-h-0">
-             <div className="p-3 md:p-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-10 flex-shrink-0">
-                 <h2 className="font-bold text-gray-700 flex items-center text-sm md:text-base"><List className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600"/> Lista de Alertas</h2>
-                 <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded-full text-gray-700">{casosFiltrados.length}</span>
+         {/* BOTÓN FLOTANTE MÓVIL (Bottom Sheet Trigger) */}
+         <button 
+             onClick={() => setShowMobileList(true)}
+             className="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 z-[400] hover:bg-blue-700 transition-transform active:scale-95"
+         >
+             <List className="w-5 h-5"/> Ver Lista de Alertas ({casosFiltrados.length})
+         </button>
+
+         {/* LISTA LATERAL EN PC / DESPLEGABLE EN MÓVIL */}
+         <div className={`
+             absolute md:relative bottom-0 left-0 w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 z-[500] md:z-auto transition-transform duration-300 ease-in-out
+             ${showMobileList ? 'translate-y-0 h-[80%]' : 'translate-y-full md:translate-y-0 h-full'}
+         `}>
+             <div className="p-3 md:p-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm flex-shrink-0 rounded-t-2xl md:rounded-none">
+                 <div className="flex items-center">
+                    <h2 className="font-bold text-gray-700 flex items-center text-sm md:text-base"><List className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600"/> Lista de Alertas</h2>
+                    <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded-full text-gray-700 ml-2">{casosFiltrados.length}</span>
+                 </div>
+                 {/* Botón Cerrar solo visible en móvil */}
+                 <button onClick={() => setShowMobileList(false)} className="md:hidden p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">
+                     <ChevronDown className="w-5 h-5"/>
+                 </button>
              </div>
              
-             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-gray-50">
                  {casosFiltrados.length === 0 ? (
                      <div className="text-center py-10 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-xl m-2">No hay reportes activos.</div>
                  ) : (
                      casosFiltrados.map(caso => (
-                         <div key={caso.id} onClick={() => setMapCenter([caso.latitud, caso.longitud])} className={`p-3 md:p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-white ${getCardStyle(caso.tipo)}`}>
+                         <div key={caso.id} onClick={() => handleVerEnMapa(caso.latitud, caso.longitud)} className={`p-3 md:p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-white ${getCardStyle(caso.tipo)}`}>
                              <div className="flex gap-3 md:gap-4">
                                  {caso.foto ? (
                                      <div className="w-16 h-16 md:w-20 md:h-20 bg-white border border-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
@@ -230,6 +253,14 @@ const PublicCasosPage = () => {
                  )}
              </div>
          </div>
+         
+         {/* OVERLAY OSCURO PARA EL MENÚ MÓVIL */}
+         {showMobileList && (
+             <div 
+                className="md:hidden absolute inset-0 bg-black/40 z-[400] transition-opacity"
+                onClick={() => setShowMobileList(false)}
+             />
+         )}
       </div>
 
       {/* MODAL DE NUEVO REPORTE */}
@@ -287,11 +318,13 @@ const PublicCasosPage = () => {
                         <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
                         <p className="text-[10px] md:text-xs text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
                         <div className="h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-md relative z-0">
-                            <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
-                                <MapFix /> 
-                                <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
-                                <LocationPicker onLocationSelected={handleMapClick} position={formData.latitud ? [formData.latitud, formData.longitud] : null} />
-                            </MapContainer>
+                            <div className="absolute inset-0">
+                                <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
+                                    <MapFix /> 
+                                    <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+                                    <LocationPicker onLocationSelected={handleMapClick} position={formData.latitud ? [formData.latitud, formData.longitud] : null} />
+                                </MapContainer>
+                            </div>
                         </div>
                         {formData.latitud && <p className="text-[10px] md:text-xs text-green-600 mt-2 font-bold flex items-center"><Plus className="w-3 h-3 mr-1"/> Ubicación registrada.</p>}
                     </div>
