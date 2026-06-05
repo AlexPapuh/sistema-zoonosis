@@ -40,22 +40,30 @@ const MapFix = () => {
     return null;
 };
 
+// PROTECCIÓN EXTREMA PARA EL VUELO DEL MAPA
 const FlyToLocation = ({ center }) => {
     const map = useMap();
     useEffect(() => { 
-        // PROTECCIÓN 1: Asegurarnos de que el centro tiene números válidos antes de volar
-        if (center && !isNaN(center[0]) && !isNaN(center[1])) {
-            map.flyTo(center, 16, { duration: 1.5 }); 
+        if (!center || !Array.isArray(center)) return;
+        const lat = parseFloat(center[0]);
+        const lng = parseFloat(center[1]);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            map.flyTo([lat, lng], 16, { duration: 1.5 }); 
         }
     }, [center, map]);
     return null;
 };
 
+// PROTECCIÓN EXTREMA PARA EL MARCADOR DE REGISTRO
 const LocationPicker = ({ onLocationSelected, position }) => {
     useMapEvents({ click(e) { onLocationSelected(e.latlng); } });
-    // PROTECCIÓN: Solo dibujar si hay posición válida
-    if (!position || isNaN(position[0]) || isNaN(position[1])) return null;
-    return <Marker position={position} />;
+    if (!position || !Array.isArray(position)) return null;
+    const lat = parseFloat(position[0]);
+    const lng = parseFloat(position[1]);
+    
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return <Marker position={[lat, lng]} />;
 };
 
 const PublicCasosPage = () => {
@@ -123,7 +131,6 @@ const PublicCasosPage = () => {
   };
 
   const handleVerEnMapa = (latitud, longitud) => {
-      // PROTECCIÓN 2: Convertir a número y verificar antes de mover el mapa
       const lat = parseFloat(latitud);
       const lng = parseFloat(longitud);
       
@@ -173,11 +180,9 @@ const PublicCasosPage = () => {
                     <FlyToLocation center={mapCenter} />
 
                     {casosFiltrados.map(caso => {
-                        // PROTECCIÓN 3: Filtrar coordenadas basura antes de darle a Leaflet
                         const lat = parseFloat(caso.latitud);
                         const lng = parseFloat(caso.longitud);
-                        
-                        if (isNaN(lat) || isNaN(lng)) return null; // Si no hay ubicación, no dibuja el marcador
+                        if (isNaN(lat) || isNaN(lng)) return null;
 
                         return (
                             <Marker key={caso.id} position={[lat, lng]} icon={getIcon(caso.tipo)}>
@@ -234,6 +239,7 @@ const PublicCasosPage = () => {
                      <div className="text-center py-10 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-xl m-2">No hay reportes activos.</div>
                  ) : (
                      casosFiltrados.map(caso => (
+                         // AQUÍ ELIMINAMOS setMapCenter Y USAMOS handleVerEnMapa
                          <div key={caso.id} onClick={() => handleVerEnMapa(caso.latitud, caso.longitud)} className={`p-3 md:p-4 rounded-xl border shadow-sm cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] bg-white ${getCardStyle(caso.tipo)}`}>
                              <div className="flex gap-3 md:gap-4">
                                  {caso.foto ? (
