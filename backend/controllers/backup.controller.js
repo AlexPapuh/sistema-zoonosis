@@ -3,10 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 exports.descargarBackup = (req, res) => {
-    const ahora = new Date();
-    const horaBolivia = new Date(ahora.getTime() - (4 * 60 * 60000)); 
-    
-    const fecha = horaBolivia.toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+    const fecha = new Date().toLocaleString('sv-SE', { timeZone: 'America/La_Paz' }).replace(' ', '_').replace(/:/g, '-');
     const fileName = `backup_zoonosis_${fecha}.sql`;
     
     const backupFolder = path.join(__dirname, '../temp');
