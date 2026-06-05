@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import casoService from '../services/caso.service.js';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
-import { AlertTriangle, Plus, X, Camera, MapPin, List, User, Phone, ArrowLeft, Search, ChevronDown } from 'lucide-react'; 
+import { AlertTriangle, Plus, X, Camera, MapPin, List, User, Phone, ArrowLeft, Search, ChevronDown, Loader2 } from 'lucide-react'; 
 import L from 'leaflet';
 import Swal from 'sweetalert2';
 import 'leaflet/dist/leaflet.css';
@@ -40,7 +40,6 @@ const MapFix = () => {
     return null;
 };
 
-// 🛡️ ESCUDO ANTI-CRASH (NaN, NaN) PARA EL MAPA 🛡️
 const FlyToLocation = ({ center }) => {
     const map = useMap();
     useEffect(() => { 
@@ -75,12 +74,11 @@ const LocationPicker = ({ onLocationSelected, position }) => {
     return <Marker position={[lat, lng]} />;
 };
 
-// NUEVO COMPONENTE: Texto expandible para la descripción
 const ExpandableText = ({ text }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     if (!text) return null;
 
-    const isLong = text.length > 55; // Si tiene más de 55 caracteres, se puede expandir
+    const isLong = text.length > 55; 
 
     return (
         <div className="mb-2">
@@ -90,7 +88,7 @@ const ExpandableText = ({ text }) => {
             {isLong && (
                 <button 
                     onClick={(e) => { 
-                        e.stopPropagation(); // Evita que al tocar "Ver más" el mapa vuele
+                        e.stopPropagation(); 
                         setIsExpanded(!isExpanded); 
                     }}
                     className="text-[10px] text-blue-600 font-bold hover:underline mt-0.5"
@@ -106,6 +104,7 @@ const PublicCasosPage = () => {
   const navigate = useNavigate();
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // NUEVO ESTADO PARA CARGAR
   const [mapCenter, setMapCenter] = useState([-19.5894, -65.7541]); 
   const [filtro, setFiltro] = useState('Todos');
 
@@ -145,6 +144,8 @@ const PublicCasosPage = () => {
       e.preventDefault();
       if (!formData.latitud) return Swal.fire({ icon: 'warning', title: 'Falta Ubicación', text: 'Haz clic en el mapa para marcar el lugar.' });
       
+      setIsSubmitting(true); // Bloquea el botón y muestra cargando
+
       try {
           await casoService.createPublicCaso(formData);
           await Swal.fire({ icon: 'success', title: '¡Reporte Publicado!', text: 'Tu alerta es visible para toda la comunidad.', timer: 3000, showConfirmButton: false });
@@ -155,6 +156,8 @@ const PublicCasosPage = () => {
           setCasos(data);
       } catch (error) { 
           Swal.fire('Error', 'No se pudo crear el reporte.', 'error'); 
+      } finally {
+          setIsSubmitting(false); // Libera el botón al terminar (éxito o error)
       }
   };
 
@@ -172,15 +175,14 @@ const PublicCasosPage = () => {
       if (!isNaN(lat) && !isNaN(lng)) {
           setMapCenter([lat, lng]);
       } else {
-          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Sin ubicación', text: 'Este reporte no tiene ubicación.', showConfirmButton: false, timer: 3000 });
+          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Sin ubicación', showConfirmButton: false, timer: 3000 });
       }
       setShowMobileList(false);
   };
 
   return (
-    <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col pt-2 md:pt-4 px-0 md:px-4 overflow-hidden relative">
+    <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col p-2 sm:p-4 overflow-hidden relative">
       
-      {/* HEADER DE LA PÁGINA */}
       <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 flex-shrink-0 border-b border-gray-200 pb-3 px-2 sm:px-0">
         <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center">
@@ -206,10 +208,8 @@ const PublicCasosPage = () => {
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL: MAPA + LISTA */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-gray-300 shadow-xl bg-white min-h-0 relative z-0">
           
-          {/* MAPA */}
           <div className="flex-1 relative h-full w-full bg-gray-100 z-0">
               <div className="absolute inset-0">
                   <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
@@ -261,7 +261,6 @@ const PublicCasosPage = () => {
              <List className="w-5 h-5"/> Ver Lista de Alertas ({casosFiltrados.length})
          </button>
 
-         {/* LISTA DE ALERTAS */}
          <div className={`
              absolute md:relative bottom-0 left-0 w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 z-[500] md:z-auto transition-transform duration-300 ease-in-out
              ${showMobileList ? 'translate-y-0 h-[80%]' : 'translate-y-full md:translate-y-0 h-full'}
@@ -298,10 +297,7 @@ const PublicCasosPage = () => {
                                          <h3 className="text-xs md:text-sm font-bold text-gray-800 truncate pr-2">{caso.titulo}</h3>
                                          <span className="text-[9px] md:text-[10px] text-gray-500 font-medium shrink-0">{new Date(caso.fecha_reporte).toLocaleDateString()}</span>
                                      </div>
-                                     
-                                     {/* AQUÍ ESTÁ EL "VER MÁS" */}
                                      <ExpandableText text={caso.descripcion} />
-                                     
                                      <div className="flex justify-between items-center mt-auto">
                                          <span className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border ${
                                             caso.tipo === 'Mascota Perdida' ? 'text-red-700 border-red-200 bg-white' : 
@@ -327,12 +323,10 @@ const PublicCasosPage = () => {
          )}
       </div>
 
-      {/* MODAL DE NUEVO REPORTE MÁS COMPACTO PARA MÓVIL */}
       {showModal && (
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
             <div className="relative w-full max-w-2xl bg-white sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl max-h-[90vh] sm:max-h-[95vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
                 
-                {/* Header fijo para el modal */}
                 <div className="flex-shrink-0 p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
                     <h2 className="text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
                     <button onClick={() => setShowModal(false)} className="bg-gray-100 p-1.5 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
@@ -340,7 +334,6 @@ const PublicCasosPage = () => {
                     </button>
                 </div>
 
-                {/* Contenido scrolleable */}
                 <div className="overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5 custom-scrollbar">
                     <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 pb-4">
                         
@@ -349,11 +342,11 @@ const PublicCasosPage = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tu Nombre</label>
-                                    <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Juan Pérez" value={formData.nombre_contacto} onChange={handleInputChange}/>
+                                    <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" value={formData.nombre_contacto} onChange={handleInputChange}/>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Celular / WhatsApp</label>
-                                    <input required name="telefono_contacto" type="tel" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. 60475162" value={formData.telefono_contacto} onChange={handleInputChange}/>
+                                    <input required name="telefono_contacto" type="tel" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" value={formData.telefono_contacto} onChange={handleInputChange}/>
                                 </div>
                             </div>
                         </div>
@@ -369,13 +362,13 @@ const PublicCasosPage = () => {
                             </div>
                             <div>
                                 <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Título Breve</label>
-                                <input type="text" name="titulo" placeholder="Ej. Se perdió mi perro" required className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
+                                <input type="text" name="titulo" required className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
                             </div>
                         </div>
                         
                         <div>
                             <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Descripción / Detalles</label>
-                            <textarea name="descripcion" rows="2" placeholder="Detalles de color, raza, ubicación exacta..." className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" value={formData.descripcion} onChange={handleInputChange} />
+                            <textarea name="descripcion" rows="2" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" value={formData.descripcion} onChange={handleInputChange} />
                         </div>
                         
                         <div>
@@ -391,7 +384,6 @@ const PublicCasosPage = () => {
                         <div>
                             <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
                             <p className="text-[10px] text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
-                            {/* Altura del mapa reducida a h-32 en celular para ahorrar mucho espacio */}
                             <div className="h-32 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-sm relative z-0">
                                 <div className="absolute inset-0">
                                     <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
@@ -404,7 +396,22 @@ const PublicCasosPage = () => {
                             {formData.latitud && <p className="text-[10px] text-green-600 mt-1 font-bold flex items-center"><Plus className="w-3 h-3 mr-1"/> Ubicación registrada.</p>}
                         </div>
                         
-                        <button type="submit" className="w-full bg-red-600 text-white py-3 sm:py-4 rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all active:scale-95 mt-2">Publicar Alerta</button>
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            className={`w-full text-white py-3 sm:py-4 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center mt-2 ${
+                                isSubmitting ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-red-600 hover:bg-red-700 shadow-red-500/30'
+                            }`}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                    Publicando...
+                                </>
+                            ) : (
+                                'Publicar Alerta'
+                            )}
+                        </button>
                     </form>
                 </div>
             </div>
