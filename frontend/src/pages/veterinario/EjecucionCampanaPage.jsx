@@ -126,7 +126,7 @@ const EjecucionCampanaPage = () => {
   const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
 
   const [form, setForm] = useState({
-      nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', 
+      nombrePropietario: '', ciPropietario: '' ,telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', 
       distritoPropietario: '', 
       latitudPropietario: '', longitudPropietario: '',
       nombreMascota: '', especie: 'Perro', sexo: 'Macho', raza: '', otraEspecie: '', fechaNacimiento: '',
@@ -218,7 +218,7 @@ const EjecucionCampanaPage = () => {
           setPacienteSeleccionadoId('nuevo');
           setForm(prev => ({
               ...prev, 
-              nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
+              nombrePropietario: '', ciPropietario: '' , telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
               latitudPropietario: '', longitudPropietario: ''
           }));
       } catch (error) { console.error(error); }
@@ -230,7 +230,7 @@ const EjecucionCampanaPage = () => {
       setPacienteSeleccionadoId('nuevo');
       setForm({ 
           ...form,
-          nombrePropietario: '', telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
+          nombrePropietario: '', ciPropietario: '' , telefonoPropietario: '', emailPropietario: '', direccionPropietario: '', distritoPropietario: '',
           latitudPropietario: '', longitudPropietario: ''
       });
   };
@@ -453,6 +453,7 @@ const handleRegistrarAtencion = async (e) => {
                                 <div className="bg-yellow-50 p-2 rounded text-xs text-yellow-700 mb-2 flex items-center"><UserPlus className="w-4 h-4 mr-1"/> Registrando Nuevo Usuario</div>
                                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label><input type="text" name="nombrePropietario" required className="block w-full border-gray-300 rounded-lg p-3 bg-white focus:ring-2 focus:ring-blue-500" placeholder="" value={form.nombrePropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="mt-2"><label className="block text-sm font-medium text-gray-700 mb-1">Cédula de Identidad <span className="text-xs text-gray-400 font-normal">(Opcional)</span></label><input type="text" name="ciPropietario" className="block w-full border-gray-300 rounded-lg p-3 bg-white focus:ring-2 focus:ring-blue-500" placeholder="C.I." value={form.ciPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label><input type="text" name="telefonoPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.telefonoPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input type="email" name="emailPropietario" className="block w-full border-gray-300 rounded-lg p-3" value={form.emailPropietario} onChange={handleInputChange} disabled={!hayStock} /></div>
                                 </div>

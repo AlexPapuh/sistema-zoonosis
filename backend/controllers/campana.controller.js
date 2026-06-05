@@ -271,7 +271,7 @@ exports.registrarAtencion = async (req, res) => {
 
         const { 
             propietario_id, 
-            nombrePropietario, telefonoPropietario, emailPropietario, direccionPropietario, 
+            nombrePropietario,ciPropietario,telefonoPropietario, emailPropietario, direccionPropietario, 
             latitudPropietario, longitudPropietario, 
             distritoPropietario, 
             animal_id, 
