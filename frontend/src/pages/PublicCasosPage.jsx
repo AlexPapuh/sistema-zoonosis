@@ -42,13 +42,20 @@ const MapFix = () => {
 
 const FlyToLocation = ({ center }) => {
     const map = useMap();
-    useEffect(() => { if (center) map.flyTo(center, 16, { duration: 1.5 }); }, [center, map]);
+    useEffect(() => { 
+        // PROTECCIÓN 1: Asegurarnos de que el centro tiene números válidos antes de volar
+        if (center && !isNaN(center[0]) && !isNaN(center[1])) {
+            map.flyTo(center, 16, { duration: 1.5 }); 
+        }
+    }, [center, map]);
     return null;
 };
 
 const LocationPicker = ({ onLocationSelected, position }) => {
     useMapEvents({ click(e) { onLocationSelected(e.latlng); } });
-    return position ? <Marker position={position} /> : null;
+    // PROTECCIÓN: Solo dibujar si hay posición válida
+    if (!position || isNaN(position[0]) || isNaN(position[1])) return null;
+    return <Marker position={position} />;
 };
 
 const PublicCasosPage = () => {
@@ -59,7 +66,7 @@ const PublicCasosPage = () => {
   const [filtro, setFiltro] = useState('Todos');
 
   const [showModal, setShowModal] = useState(false);
-  const [showMobileList, setShowMobileList] = useState(false); // Estado para el menú desplegable de la lista
+  const [showMobileList, setShowMobileList] = useState(false); 
   
   const [formData, setFormData] = useState({
       titulo: '', descripcion: '', tipo: 'Mascota Perdida', latitud: '', longitud: '', foto: '',
@@ -116,15 +123,21 @@ const PublicCasosPage = () => {
   };
 
   const handleVerEnMapa = (latitud, longitud) => {
-      setMapCenter([latitud, longitud]);
-      setShowMobileList(false); // Cierra la lista en móvil al seleccionar uno
+      // PROTECCIÓN 2: Convertir a número y verificar antes de mover el mapa
+      const lat = parseFloat(latitud);
+      const lng = parseFloat(longitud);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+          setMapCenter([lat, lng]);
+      } else {
+          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Sin ubicación', text: 'Este reporte no tiene ubicación exacta.', showConfirmButton: false, timer: 3000 });
+      }
+      setShowMobileList(false); 
   };
 
   return (
-    // Altura controlada rígidamente para forzar al mapa a renderizar
     <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col pt-2 md:pt-4 px-0 md:px-4 overflow-hidden relative">
       
-      {/* HEADER */}
       <div className="mb-2 md:mb-3 flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-3 flex-shrink-0 px-2 md:px-0">
         <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center">
@@ -150,47 +163,51 @@ const PublicCasosPage = () => {
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL: MAPA + LISTA */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-t-xl md:rounded-xl border border-gray-300 shadow-xl bg-white relative z-0">
           
-          {/* EL MAPA: Ocupa el 100% del espacio disponible */}
           <div className="flex-1 relative h-full w-full bg-gray-100 z-0">
-              {/* Para arreglar el "mapa gris", Leaflet necesita absolute inset-0 */}
               <div className="absolute inset-0">
-                  <MapContainer center={mapCenter} zoom={14} style={{ height: '100%', width: '100%' }}>
+                  <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
                     <MapFix /> 
                     <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
                     <FlyToLocation center={mapCenter} />
 
-                    {casosFiltrados.map(caso => (
-                        <Marker key={caso.id} position={[caso.latitud, caso.longitud]} icon={getIcon(caso.tipo)}>
-                            <Popup>
-                                <div className="min-w-[200px] max-w-[260px] pt-3 pr-2">
-                                    <div className="inline-flex items-center text-[10px] text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md mb-2 max-w-full">
-                                        <User className="w-3 h-3 mr-1 shrink-0"/> 
-                                        <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
+                    {casosFiltrados.map(caso => {
+                        // PROTECCIÓN 3: Filtrar coordenadas basura antes de darle a Leaflet
+                        const lat = parseFloat(caso.latitud);
+                        const lng = parseFloat(caso.longitud);
+                        
+                        if (isNaN(lat) || isNaN(lng)) return null; // Si no hay ubicación, no dibuja el marcador
+
+                        return (
+                            <Marker key={caso.id} position={[lat, lng]} icon={getIcon(caso.tipo)}>
+                                <Popup>
+                                    <div className="min-w-[200px] max-w-[260px] pt-3 pr-2">
+                                        <div className="inline-flex items-center text-[10px] text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md mb-2 max-w-full">
+                                            <User className="w-3 h-3 mr-1 shrink-0"/> 
+                                            <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
+                                        </div>
+                                        <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
+                                        <p className="text-xs text-gray-600 mt-1 mb-2 line-clamp-3">{caso.descripcion}</p>
+                                        {caso.foto && (
+                                            <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
+                                                <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
+                                            </div>
+                                        )}
+                                        {caso.telefono_reporte && (
+                                            <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
+                                                <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
+                                            </div>
+                                        )}
                                     </div>
-                                    <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
-                                    <p className="text-xs text-gray-600 mt-1 mb-2 line-clamp-3">{caso.descripcion}</p>
-                                    {caso.foto && (
-                                        <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
-                                            <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
-                                        </div>
-                                    )}
-                                    {caso.telefono_reporte && (
-                                        <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
-                                            <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
-                                        </div>
-                                    )}
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
+                                </Popup>
+                            </Marker>
+                        );
+                    })}
                  </MapContainer>
               </div>
          </div>
 
-         {/* BOTÓN FLOTANTE MÓVIL (Bottom Sheet Trigger) */}
          <button 
              onClick={() => setShowMobileList(true)}
              className="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 z-[400] hover:bg-blue-700 transition-transform active:scale-95"
@@ -198,7 +215,6 @@ const PublicCasosPage = () => {
              <List className="w-5 h-5"/> Ver Lista de Alertas ({casosFiltrados.length})
          </button>
 
-         {/* LISTA LATERAL EN PC / DESPLEGABLE EN MÓVIL */}
          <div className={`
              absolute md:relative bottom-0 left-0 w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 z-[500] md:z-auto transition-transform duration-300 ease-in-out
              ${showMobileList ? 'translate-y-0 h-[80%]' : 'translate-y-full md:translate-y-0 h-full'}
@@ -208,7 +224,6 @@ const PublicCasosPage = () => {
                     <h2 className="font-bold text-gray-700 flex items-center text-sm md:text-base"><List className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600"/> Lista de Alertas</h2>
                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded-full text-gray-700 ml-2">{casosFiltrados.length}</span>
                  </div>
-                 {/* Botón Cerrar solo visible en móvil */}
                  <button onClick={() => setShowMobileList(false)} className="md:hidden p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">
                      <ChevronDown className="w-5 h-5"/>
                  </button>
@@ -254,7 +269,6 @@ const PublicCasosPage = () => {
              </div>
          </div>
          
-         {/* OVERLAY OSCURO PARA EL MENÚ MÓVIL */}
          {showMobileList && (
              <div 
                 className="md:hidden absolute inset-0 bg-black/40 z-[400] transition-opacity"
@@ -263,7 +277,6 @@ const PublicCasosPage = () => {
          )}
       </div>
 
-      {/* MODAL DE NUEVO REPORTE */}
       {showModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4 backdrop-blur-sm">
             <div className="relative w-full max-w-2xl rounded-2xl bg-white p-4 md:p-6 shadow-2xl max-h-[95vh] overflow-y-auto custom-scrollbar">
