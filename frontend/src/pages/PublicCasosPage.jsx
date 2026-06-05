@@ -40,21 +40,37 @@ const MapFix = () => {
     return null;
 };
 
-// PROTECCIÓN: Verifica que haya coordenadas antes de volar
+// 🛡️ ESCUDO ANTI-CRASH (NaN, NaN) PARA EL MAPA 🛡️
 const FlyToLocation = ({ center }) => {
     const map = useMap();
     useEffect(() => { 
         if (!center || !Array.isArray(center)) return;
+        
         const lat = parseFloat(center[0]);
         const lng = parseFloat(center[1]);
+        
         if (!isNaN(lat) && !isNaN(lng)) {
-            map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+            // Verificamos si el mapa está visible (que no mida 0 píxeles por estar colapsado en celular)
+            const mapSize = map.getSize();
+            if (mapSize.x === 0 || mapSize.y === 0) {
+                // Si el mapa mide 0, NO animamos, solo teletransportamos silenciosamente
+                map.setView([lat, lng], 16);
+                return;
+            }
+
+            try {
+                // Si todo está bien, volamos
+                map.flyTo([lat, lng], 16, { duration: 1.5 }); 
+            } catch (error) {
+                // Si Leaflet hace un cálculo erróneo y lanza error, lo atrapamos y usamos teletransportación
+                console.warn("Error en animación Leaflet. Usando fallback setView.");
+                map.setView([lat, lng], 16);
+            }
         }
     }, [center, map]);
     return null;
 };
 
-// PROTECCIÓN: Verifica coordenadas antes de poner el pin
 const LocationPicker = ({ onLocationSelected, position }) => {
     useMapEvents({ click(e) { onLocationSelected(e.latlng); } });
     if (!position || !Array.isArray(position)) return null;
@@ -72,7 +88,7 @@ const PublicCasosPage = () => {
   const [filtro, setFiltro] = useState('Todos');
 
   const [showModal, setShowModal] = useState(false);
-  const [showMobileList, setShowMobileList] = useState(false); // ESTADO PARA EL DESPLEGABLE MÓVIL
+  const [showMobileList, setShowMobileList] = useState(false); 
   
   const [formData, setFormData] = useState({
       titulo: '', descripcion: '', tipo: 'Mascota Perdida', latitud: '', longitud: '', foto: '',
@@ -128,22 +144,21 @@ const PublicCasosPage = () => {
       return 'border-orange-200 bg-orange-50 hover:border-orange-400';
   };
 
-  // Función para mover el mapa y cerrar la lista móvil
   const handleVerEnMapa = (latitud, longitud) => {
       const lat = parseFloat(latitud);
       const lng = parseFloat(longitud);
       if (!isNaN(lat) && !isNaN(lng)) {
           setMapCenter([lat, lng]);
       } else {
-          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Sin ubicación', showConfirmButton: false, timer: 3000 });
+          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Sin ubicación', text: 'Este reporte no tiene ubicación.', showConfirmButton: false, timer: 3000 });
       }
-      setShowMobileList(false); // Cierra el desplegable tras tocar una tarjeta
+      setShowMobileList(false);
   };
 
   return (
     <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col p-2 sm:p-4 overflow-hidden relative">
       
-      <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 flex-shrink-0 border-b border-gray-200 pb-3">
+      <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 flex-shrink-0 border-b border-gray-200 pb-3 px-2 sm:px-0">
         <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center">
                 <AlertTriangle className="mr-2 md:mr-3 text-red-500 h-6 w-6 md:h-8 md:w-8 shrink-0" />
@@ -170,9 +185,7 @@ const PublicCasosPage = () => {
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-gray-300 shadow-xl bg-white min-h-0 relative z-0">
           
-          {/* MAPA: En PC ocupa lo que le deja la lista. En móvil ocupa TODO. */}
           <div className="flex-1 relative h-full w-full bg-gray-100 z-0">
-              {/* SOLUCIÓN 1: absolute inset-0 previene que el mapa se quede gris en celulares */}
               <div className="absolute inset-0">
                   <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
                     <MapFix /> 
@@ -213,7 +226,6 @@ const PublicCasosPage = () => {
               </div>
           </div>
 
-         {/* BOTÓN FLOTANTE: Solo se ve en celular. Abre la lista. */}
          <button 
              onClick={() => setShowMobileList(true)}
              className="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 z-[400] hover:bg-blue-700 transition-transform active:scale-95"
@@ -221,7 +233,6 @@ const PublicCasosPage = () => {
              <List className="w-5 h-5"/> Ver Lista de Alertas ({casosFiltrados.length})
          </button>
 
-         {/* LISTA DE ALERTAS: Desplegable en móvil, Fija en PC */}
          <div className={`
              absolute md:relative bottom-0 left-0 w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 z-[500] md:z-auto transition-transform duration-300 ease-in-out
              ${showMobileList ? 'translate-y-0 h-[80%]' : 'translate-y-full md:translate-y-0 h-full'}
@@ -231,7 +242,6 @@ const PublicCasosPage = () => {
                     <h2 className="font-bold text-gray-700 flex items-center text-sm md:text-base"><List className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600"/> Lista de Alertas</h2>
                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded-full text-gray-700 ml-2">{casosFiltrados.length}</span>
                  </div>
-                 {/* Botón para cerrar la lista en celular */}
                  <button onClick={() => setShowMobileList(false)} className="md:hidden p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">
                      <ChevronDown className="w-5 h-5"/>
                  </button>
@@ -259,7 +269,6 @@ const PublicCasosPage = () => {
                                          <h3 className="text-xs md:text-sm font-bold text-gray-800 truncate pr-2">{caso.titulo}</h3>
                                          <span className="text-[9px] md:text-[10px] text-gray-500 font-medium shrink-0">{new Date(caso.fecha_reporte).toLocaleDateString()}</span>
                                      </div>
-                                     {/* SOLUCIÓN 2: line-clamp-1 para que la descripción no haga las tarjetas gigantes */}
                                      <p className="text-[11px] md:text-xs text-gray-600 line-clamp-1 leading-relaxed mb-2">{caso.descripcion}</p>
                                      <div className="flex justify-between items-center mt-auto">
                                          <span className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border ${
@@ -278,7 +287,6 @@ const PublicCasosPage = () => {
              </div>
          </div>
          
-         {/* OVERLAY OSCURO: Aparece detrás del menú en móvil para oscurecer el mapa */}
          {showMobileList && (
              <div 
                 className="md:hidden absolute inset-0 bg-black/40 z-[400] transition-opacity"
@@ -341,7 +349,6 @@ const PublicCasosPage = () => {
                         <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
                         <p className="text-[10px] md:text-xs text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
                         <div className="h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-md relative z-0">
-                            {/* EL MAPA DE REPORTAR TAMBIÉN LLEVA ABSOLUTE INSET-0 */}
                             <div className="absolute inset-0">
                                 <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
                                     <MapFix /> 
