@@ -310,10 +310,10 @@ exports.registrarAtencion = async (req, res) => {
                 const rawPassword = telefonoPropietario ? telefonoPropietario.toString() : '123456';
                 const salt = await bcrypt.genSalt(10);
                 const hashedPassword = await bcrypt.hash(rawPassword, salt);
-
+                const ciFinal = ciPropietario || null;
                 const [userResult] = await connection.query(
-                    "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'Propietario')",
-                    [nombrePropietario, emailPropietario, hashedPassword]
+                    "INSERT INTO usuarios (nombre, email, password, ci , rol) VALUES (?, ?, ?, ?,  'Propietario')",
+                    [nombrePropietario, emailPropietario, hashedPassword,ciFinal]
                 );
                 const newUserId = userResult.insertId;
 
