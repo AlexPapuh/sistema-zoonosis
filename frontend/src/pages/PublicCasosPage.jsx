@@ -50,19 +50,14 @@ const FlyToLocation = ({ center }) => {
         const lng = parseFloat(center[1]);
         
         if (!isNaN(lat) && !isNaN(lng)) {
-            // Verificamos si el mapa está visible (que no mida 0 píxeles por estar colapsado en celular)
             const mapSize = map.getSize();
             if (mapSize.x === 0 || mapSize.y === 0) {
-                // Si el mapa mide 0, NO animamos, solo teletransportamos silenciosamente
                 map.setView([lat, lng], 16);
                 return;
             }
-
             try {
-                // Si todo está bien, volamos
                 map.flyTo([lat, lng], 16, { duration: 1.5 }); 
             } catch (error) {
-                // Si Leaflet hace un cálculo erróneo y lanza error, lo atrapamos y usamos teletransportación
                 console.warn("Error en animación Leaflet. Usando fallback setView.");
                 map.setView([lat, lng], 16);
             }
@@ -78,6 +73,33 @@ const LocationPicker = ({ onLocationSelected, position }) => {
     const lng = parseFloat(position[1]);
     if (isNaN(lat) || isNaN(lng)) return null;
     return <Marker position={[lat, lng]} />;
+};
+
+// NUEVO COMPONENTE: Texto expandible para la descripción
+const ExpandableText = ({ text }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    if (!text) return null;
+
+    const isLong = text.length > 55; // Si tiene más de 55 caracteres, se puede expandir
+
+    return (
+        <div className="mb-2">
+            <p className={`text-[11px] md:text-xs text-gray-600 leading-relaxed transition-all ${isExpanded ? '' : 'line-clamp-1'}`}>
+                {text}
+            </p>
+            {isLong && (
+                <button 
+                    onClick={(e) => { 
+                        e.stopPropagation(); // Evita que al tocar "Ver más" el mapa vuele
+                        setIsExpanded(!isExpanded); 
+                    }}
+                    className="text-[10px] text-blue-600 font-bold hover:underline mt-0.5"
+                >
+                    {isExpanded ? 'Ver menos' : 'Ver más'}
+                </button>
+            )}
+        </div>
+    );
 };
 
 const PublicCasosPage = () => {
@@ -156,8 +178,9 @@ const PublicCasosPage = () => {
   };
 
   return (
-    <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col p-2 sm:p-4 overflow-hidden relative">
+    <div className="container mx-auto h-[100dvh] md:h-[calc(100vh-80px)] flex flex-col pt-2 md:pt-4 px-0 md:px-4 overflow-hidden relative">
       
+      {/* HEADER DE LA PÁGINA */}
       <div className="mb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 flex-shrink-0 border-b border-gray-200 pb-3 px-2 sm:px-0">
         <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center">
@@ -183,8 +206,10 @@ const PublicCasosPage = () => {
         </div>
       </div>
 
+      {/* CONTENEDOR PRINCIPAL: MAPA + LISTA */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-gray-300 shadow-xl bg-white min-h-0 relative z-0">
           
+          {/* MAPA */}
           <div className="flex-1 relative h-full w-full bg-gray-100 z-0">
               <div className="absolute inset-0">
                   <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
@@ -205,13 +230,16 @@ const PublicCasosPage = () => {
                                             <User className="w-3 h-3 mr-1 shrink-0"/> 
                                             <span className="truncate">{caso.reportado_por || 'Anónimo'}</span>
                                         </div>
+                                        
                                         <h3 className="font-bold text-sm text-gray-800 break-words leading-tight">{caso.titulo}</h3>
-                                        <p className="text-xs text-gray-600 mt-1 mb-2 line-clamp-3">{caso.descripcion}</p>
+                                        <ExpandableText text={caso.descripcion} />
+                                        
                                         {caso.foto && (
                                             <div className="w-full h-32 mb-2 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 overflow-hidden">
                                                 <img src={caso.foto} alt="caso" className="max-w-full max-h-full object-contain" />
                                             </div>
                                         )}
+                                        
                                         {caso.telefono_reporte && (
                                             <div className="inline-flex items-center text-xs text-green-700 font-bold mt-1 bg-green-50 px-2 py-1.5 rounded border border-green-100 w-full">
                                                 <Phone className="w-3 h-3 mr-2 shrink-0"/> {caso.telefono_reporte}
@@ -233,6 +261,7 @@ const PublicCasosPage = () => {
              <List className="w-5 h-5"/> Ver Lista de Alertas ({casosFiltrados.length})
          </button>
 
+         {/* LISTA DE ALERTAS */}
          <div className={`
              absolute md:relative bottom-0 left-0 w-full md:w-[350px] lg:w-96 bg-gray-50 flex flex-col border-t md:border-t-0 md:border-l border-gray-200 z-[500] md:z-auto transition-transform duration-300 ease-in-out
              ${showMobileList ? 'translate-y-0 h-[80%]' : 'translate-y-full md:translate-y-0 h-full'}
@@ -247,7 +276,7 @@ const PublicCasosPage = () => {
                  </button>
              </div>
              
-             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-gray-50">
                  {casosFiltrados.length === 0 ? (
                      <div className="text-center py-10 text-gray-400 text-sm font-medium border-2 border-dashed border-gray-200 rounded-xl m-2">No hay reportes activos.</div>
                  ) : (
@@ -269,7 +298,10 @@ const PublicCasosPage = () => {
                                          <h3 className="text-xs md:text-sm font-bold text-gray-800 truncate pr-2">{caso.titulo}</h3>
                                          <span className="text-[9px] md:text-[10px] text-gray-500 font-medium shrink-0">{new Date(caso.fecha_reporte).toLocaleDateString()}</span>
                                      </div>
-                                     <p className="text-[11px] md:text-xs text-gray-600 line-clamp-1 leading-relaxed mb-2">{caso.descripcion}</p>
+                                     
+                                     {/* AQUÍ ESTÁ EL "VER MÁS" */}
+                                     <ExpandableText text={caso.descripcion} />
+                                     
                                      <div className="flex justify-between items-center mt-auto">
                                          <span className={`text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border ${
                                             caso.tipo === 'Mascota Perdida' ? 'text-red-700 border-red-200 bg-white' : 
@@ -295,73 +327,86 @@ const PublicCasosPage = () => {
          )}
       </div>
 
+      {/* MODAL DE NUEVO REPORTE MÁS COMPACTO PARA MÓVIL */}
       {showModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-2xl rounded-2xl bg-white p-4 md:p-6 shadow-2xl max-h-[95vh] overflow-y-auto custom-scrollbar">
-                <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"><X className="h-4 w-4 sm:h-5 sm:w-5" /></button>
-                <h2 className="text-lg md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 pr-10">Nuevo Reporte Público</h2>
-                <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
-                    
-                    <div className="bg-blue-50 p-3 md:p-4 rounded-xl border border-blue-100">
-                        <h3 className="text-xs md:text-sm font-bold text-blue-800 mb-3 flex items-center"><User className="w-4 h-4 mr-2"/> Tus Datos de Contacto</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                            <div>
-                                <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tu Nombre</label>
-                                <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Juan Pérez" value={formData.nombre_contacto} onChange={handleInputChange}/>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Celular / WhatsApp</label>
-                                <input required name="telefono_contacto" type="tel" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. 60475162" value={formData.telefono_contacto} onChange={handleInputChange}/>
-                            </div>
-                        </div>
-                    </div>
+          <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black bg-opacity-60 sm:p-4 backdrop-blur-sm transition-all">
+            <div className="relative w-full max-w-2xl bg-white sm:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl max-h-[90vh] sm:max-h-[95vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
+                
+                {/* Header fijo para el modal */}
+                <div className="flex-shrink-0 p-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-2xl sm:rounded-t-2xl">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-800">Nuevo Reporte Público</h2>
+                    <button onClick={() => setShowModal(false)} className="bg-gray-100 p-1.5 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                        <div>
-                            <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tipo de Reporte</label>
-                            <select name="tipo" className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" value={formData.tipo} onChange={handleInputChange}>
-                                <option value="Mascota Perdida">🔴 Mascota Perdida</option>
-                                <option value="Mascota Encontrada">🟢 Mascota Encontrada</option>
-                                <option value="Caso Zoonosis">🟠 Alerta Zoonosis</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Título Breve</label>
-                            <input type="text" name="titulo" placeholder="Ej. Se perdió mi perro" required className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Descripción / Detalles</label>
-                        <textarea name="descripcion" rows="2" placeholder="Detalles de color, raza, ubicación exacta..." className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" value={formData.descripcion} onChange={handleInputChange} />
-                    </div>
-                    
-                    <div>
-                        <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><Camera className="w-3 h-3 md:w-4 md:h-4 mr-1 text-gray-400"/> Subir Foto (Opcional)</label>
-                        <input type="file" accept="image/*" className="block w-full text-xs md:text-sm text-gray-500 file:mr-3 md:file:mr-4 file:py-2 md:file:py-2.5 file:px-3 md:file:px-4 file:rounded-lg file:border-0 file:text-xs md:file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer border border-gray-200 rounded-lg p-1" onChange={handleFileChange} />
-                        {previewImage && (
-                            <div className="mt-2 md:mt-3 bg-gray-50 border border-gray-200 rounded-lg p-2 inline-flex justify-center w-full sm:w-auto">
-                                <img src={previewImage} alt="Preview" className="h-32 sm:h-40 object-contain rounded" />
+                {/* Contenido scrolleable */}
+                <div className="overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5 custom-scrollbar">
+                    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 pb-4">
+                        
+                        <div className="bg-blue-50 p-3 sm:p-4 rounded-xl border border-blue-100">
+                            <h3 className="text-xs md:text-sm font-bold text-blue-800 mb-3 flex items-center"><User className="w-4 h-4 mr-2"/> Tus Datos de Contacto</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tu Nombre</label>
+                                    <input required name="nombre_contacto" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Juan Pérez" value={formData.nombre_contacto} onChange={handleInputChange}/>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Celular / WhatsApp</label>
+                                    <input required name="telefono_contacto" type="tel" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. 60475162" value={formData.telefono_contacto} onChange={handleInputChange}/>
+                                </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
 
-                    <div>
-                        <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
-                        <p className="text-[10px] md:text-xs text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
-                        <div className="h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-md relative z-0">
-                            <div className="absolute inset-0">
-                                <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
-                                    <MapFix /> 
-                                    <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
-                                    <LocationPicker onLocationSelected={handleMapClick} position={formData.latitud ? [formData.latitud, formData.longitud] : null} />
-                                </MapContainer>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Tipo de Reporte</label>
+                                <select name="tipo" className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" value={formData.tipo} onChange={handleInputChange}>
+                                    <option value="Mascota Perdida">🔴 Mascota Perdida</option>
+                                    <option value="Mascota Encontrada">🟢 Mascota Encontrada</option>
+                                    <option value="Caso Zoonosis">🟠 Alerta Zoonosis</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Título Breve</label>
+                                <input type="text" name="titulo" placeholder="Ej. Se perdió mi perro" required className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.titulo} onChange={handleInputChange} />
                             </div>
                         </div>
-                        {formData.latitud && <p className="text-[10px] md:text-xs text-green-600 mt-2 font-bold flex items-center"><Plus className="w-3 h-3 mr-1"/> Ubicación registrada.</p>}
-                    </div>
-                    
-                    <button type="submit" className="w-full bg-red-600 text-white py-3 md:py-4 rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all hover:scale-[1.01] mt-2">Publicar Alerta</button>
-                </form>
+                        
+                        <div>
+                            <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Descripción / Detalles</label>
+                            <textarea name="descripcion" rows="2" placeholder="Detalles de color, raza, ubicación exacta..." className="w-full border border-gray-300 rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" value={formData.descripcion} onChange={handleInputChange} />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><Camera className="w-3 h-3 md:w-4 md:h-4 mr-1 text-gray-400"/> Subir Foto (Opcional)</label>
+                            <input type="file" accept="image/*" className="block w-full text-xs md:text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors cursor-pointer border border-gray-200 rounded-lg p-1" onChange={handleFileChange} />
+                            {previewImage && (
+                                <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-2 inline-flex justify-center w-full sm:w-auto">
+                                    <img src={previewImage} alt="Preview" className="h-28 sm:h-32 object-contain rounded" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] md:text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider flex items-center"><MapPin className="w-3 h-3 md:w-4 md:h-4 mr-1 text-red-500"/> Ubicación del Suceso</label>
+                            <p className="text-[10px] text-blue-600 font-semibold mb-2">Toca el mapa para dejar caer el marcador rojo 📍</p>
+                            {/* Altura del mapa reducida a h-32 en celular para ahorrar mucho espacio */}
+                            <div className="h-32 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-blue-400 shadow-sm relative z-0">
+                                <div className="absolute inset-0">
+                                    <MapContainer center={[-19.5894, -65.7541]} zoom={14} style={{ height: '100%', width: '100%' }}>
+                                        <MapFix /> 
+                                        <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+                                        <LocationPicker onLocationSelected={handleMapClick} position={formData.latitud ? [formData.latitud, formData.longitud] : null} />
+                                    </MapContainer>
+                                </div>
+                            </div>
+                            {formData.latitud && <p className="text-[10px] text-green-600 mt-1 font-bold flex items-center"><Plus className="w-3 h-3 mr-1"/> Ubicación registrada.</p>}
+                        </div>
+                        
+                        <button type="submit" className="w-full bg-red-600 text-white py-3 sm:py-4 rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all active:scale-95 mt-2">Publicar Alerta</button>
+                    </form>
+                </div>
             </div>
           </div>
       )}
