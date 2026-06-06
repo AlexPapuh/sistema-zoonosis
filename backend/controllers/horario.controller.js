@@ -20,45 +20,29 @@ exports.updateHorarioNormal = async (req, res) => {
             dias_atencion 
         } = req.body;
 
-        const [existe] = await db.query("SELECT id FROM configuracion_horario LIMIT 1");
-
-        if (existe.length > 0) {
-            await db.query(
-                `UPDATE configuracion_horario 
-                 SET apertura_manana=?, 
-                     cierre_manana=?, 
-                     apertura_tarde=?, 
-                     cierre_tarde=?, 
-                     dias_atencion=?  
-                 WHERE id = ?`, 
-                [
-                    apertura_manana, 
-                    cierre_manana, 
-                    apertura_tarde, 
-                    cierre_tarde, 
-                    dias_atencion, 
-                    existe[0].id
-                ]
-            );
-        } else {
-            await db.query(
-                `INSERT INTO configuracion_horario 
-                 (apertura_manana, cierre_manana, apertura_tarde, cierre_tarde, dias_atencion) 
-                 VALUES (?, ?, ?, ?, ?)`,
-                [
-                    apertura_manana, 
-                    cierre_manana, 
-                    apertura_tarde, 
-                    cierre_tarde, 
-                    dias_atencion
-                ]
-            );
-        }
+        await db.query(
+            `INSERT INTO configuracion_horario 
+             (id, apertura_manana, cierre_manana, apertura_tarde, cierre_tarde, dias_atencion) 
+             VALUES (1, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE 
+             apertura_manana = VALUES(apertura_manana),
+             cierre_manana = VALUES(cierre_manana),
+             apertura_tarde = VALUES(apertura_tarde),
+             cierre_tarde = VALUES(cierre_tarde),
+             dias_atencion = VALUES(dias_atencion)`,
+            [
+                apertura_manana, 
+                cierre_manana, 
+                apertura_tarde, 
+                cierre_tarde, 
+                dias_atencion
+            ]
+        );
 
         res.json({ message: "Horario y días de atención actualizados correctamente" });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error en updateHorarioNormal:", error);
         res.status(500).json({ message: "Error al actualizar horario" });
     }
 };
