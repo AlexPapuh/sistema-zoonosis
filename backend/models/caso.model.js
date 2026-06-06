@@ -23,18 +23,14 @@ Caso.archivarVencidos = async () => {
 Caso.getAll = async (estado = 'Abierto') => {
   const [rows] = await db.query(`
     SELECT c.*, 
-           -- LOGICA HIBRIDA:
-           -- Si u.nombre existe (es logueado), usalo. Si no, usa c.nombre_contacto (es invitado)
            COALESCE(u.nombre, c.nombre_contacto) as reportado_por,
            COALESCE(p.telefono, c.telefono_contacto) as telefono_reporte
     FROM casos_reportados c
-    -- USAMOS LEFT JOIN PARA QUE NO DESAPAREZCAN LOS QUE TIENEN usuario_id NULL
     LEFT JOIN usuarios u ON c.usuario_id = u.id
     LEFT JOIN propietarios p ON p.usuario_id = u.id
     WHERE c.estado = ? 
     ORDER BY c.fecha_reporte DESC
   `, [estado]);
-  
   return rows;
 };
 
@@ -47,6 +43,7 @@ Caso.delete = async (id) => {
   const [result] = await db.query('DELETE FROM casos_reportados WHERE id = ?', [id]);
   return result.affectedRows > 0;
 };
+
 Caso.createPublic = async (titulo, descripcion, latitud, longitud, tipo, nombre_contacto, telefono_contacto, foto) => {
   const [result] = await db.query(
     'INSERT INTO casos_reportados (titulo, descripcion, latitud, longitud, tipo, usuario_id, nombre_contacto, telefono_contacto, foto) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)',
@@ -54,8 +51,9 @@ Caso.createPublic = async (titulo, descripcion, latitud, longitud, tipo, nombre_
   );
   return { id: result.insertId };
 };
+
 Caso.getAllPublic = async () => {
-  await Caso.archivarVencidos();
+  // 🚀 ELIMINADO: Ya no archivamos aquí para no bloquear la base de datos
   const [rows] = await db.query(`
     SELECT c.*, 
            COALESCE(u.nombre, c.nombre_contacto) as reportado_por,
@@ -66,7 +64,19 @@ Caso.getAllPublic = async () => {
     WHERE c.estado = 'Abierto'
     ORDER BY c.fecha_reporte DESC
   `);
-  
   return rows;
 };
+
+// ⏰ NUEVO: Tarea automática en segundo plano (cada 12 horas)
+setInterval(async () => {
+    try {
+        const afectados = await Caso.archivarVencidos();
+        if (afectados > 0) {
+            console.log(`[SISTEMA DE CASOS] 🧹 Se archivaron automáticamente ${afectados} casos viejos.`);
+        }
+    } catch (error) {
+        console.error('[ERROR TAREA ARCHIVADO]', error);
+    }
+}, 12 * 60 * 60 * 1000); // Se ejecuta cada 12 horas
+
 module.exports = Caso;

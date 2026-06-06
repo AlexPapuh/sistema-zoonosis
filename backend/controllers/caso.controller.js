@@ -20,10 +20,8 @@ exports.createCaso = async (req, res) => {
 
 exports.getAllCasos = async (req, res) => {
   try {
-    await Caso.archivarVencidos();
 
     const estadoSolicitado = req.query.estado || 'Abierto';
-
     const casos = await Caso.getAll(estadoSolicitado);
     
     res.status(200).json(casos);
