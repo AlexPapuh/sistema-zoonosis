@@ -48,6 +48,7 @@ client.on('disconnected', (reason) => {
     console.log('❌ WhatsApp Desconectado:', reason);
     isConnected = false;
     qrCodeBase64 = null;
+    client.info = undefined;
     client.initialize(); 
 });
 
@@ -88,8 +89,7 @@ const logoutWhatsApp = async () => {
     
     isConnected = false;
     qrCodeBase64 = null;
-    
-  
+    client.info = undefined; 
 };
 client.initialize();
 
