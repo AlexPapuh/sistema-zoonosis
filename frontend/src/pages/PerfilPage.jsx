@@ -123,19 +123,19 @@ const PerfilPage = () => {
     fetchProfile();
   }, []);
 
-  // --- LOOP DE MONITOREO (POLLING) DE WHATSAPP (CON FETCH NATIVO) ---
   useEffect(() => {
       let interval;
       
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  const token = localStorage.getItem('token'); // Recuperar token manualmente
+                  const token = localStorage.getItem('token'); 
                   
                   const response = await fetch('/api/whatsapp/status', {
                       method: 'GET',
                       headers: {
                           'Authorization': `Bearer ${token}`,
+                          'x-access-token': token,
                           'Content-Type': 'application/json'
                       }
                   });
@@ -146,7 +146,6 @@ const PerfilPage = () => {
                       setQrCode(data.qr);
                   }
               } catch (err) {
-                  // Silencio para no llenar la consola si hay un microcorte
               }
           };
 
@@ -217,11 +216,11 @@ const PerfilPage = () => {
                   setWaStatus('cargando');
                   const token = localStorage.getItem('token');
                   
-                  // Logout con fetch nativo
                   const response = await fetch('/api/whatsapp/logout', {
                       method: 'POST',
                       headers: {
                           'Authorization': `Bearer ${token}`,
+                          'x-access-token': token,
                           'Content-Type': 'application/json'
                       }
                   });
