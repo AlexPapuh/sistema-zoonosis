@@ -123,24 +123,24 @@ const PerfilPage = () => {
     fetchProfile();
   }, []);
 
-  // --- LOOP DE MONITOREO (POLLING) DE WHATSAPP ---
   useEffect(() => {
       let interval;
       
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  // Usamos authService.api para asegurar que toma la URL base correcta y el token
-                  const res = await authService.api.get('/api/whatsapp/status');
+                  console.log("📡 Consultando estado de WhatsApp...");
+                  const res = await authService.api.get('/whatsapp/status');
+                  console.log("✅ Respuesta del servidor:", res.data);
                   setWaStatus(res.data.status);
                   setQrCode(res.data.qr);
               } catch (err) {
-                  // Lo mantenemos en silencio para no saturar la consola si el backend está reiniciando
+                console.error('❌ Error consultando el bot de WhatsApp:', err);
               }
           };
 
-          checkWhatsAppStatus(); // Primera ejecución
-          interval = setInterval(checkWhatsAppStatus, 3000); // Re-consulta cada 3 segundos
+          checkWhatsAppStatus(); 
+          interval = setInterval(checkWhatsAppStatus, 3000); 
       }
 
       return () => clearInterval(interval); 
@@ -204,8 +204,7 @@ const PerfilPage = () => {
           if (result.isConfirmed) {
               try {
                   setWaStatus('cargando');
-                  // Usamos authService.api para la ruta correcta
-                  await authService.api.post('/api/whatsapp/logout');
+                  await authService.api.post('/whatsapp/logout');
                   setWaStatus('desconectado');
                   setQrCode(null);
                   Swal.fire('Sesión Cerrada', 'WhatsApp se ha desvinculado. Espera unos segundos a que el bot genere el nuevo código QR.', 'success');
