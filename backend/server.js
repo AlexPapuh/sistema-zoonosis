@@ -28,7 +28,7 @@ const citasRoutes = require('./routes/citas.routes');
 const horarioRoutes = require('./routes/horario.routes');
 const chatbotRoutes = require('./routes/chatbot.routes'); 
 const backupRoutes = require('./routes/backup.routes');
-
+const whatsappRoutes = require('./routes/whatsapp.routes');
 const app = express();
 const server = http.createServer(app); 
 
@@ -101,7 +101,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/horarios', horarioRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/admin', backupRoutes);
-
+app.use('/api/whatsapp', whatsappRoutes);
 server.listen(PORT, () => {
   console.log(`🚀 Servidor (HTTP + Socket + WhatsApp) corriendo en https://zoonosispotosi.site:${PORT}`);
 });

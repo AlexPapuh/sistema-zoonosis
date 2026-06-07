@@ -1,5 +1,10 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const qrcodeTerminal = require('qrcode-terminal');
+const qrcode = require('qrcode'); // <--- Nueva librería
+
+// Variables de estado en memoria
+let qrCodeBase64 = null;
+let isConnected = false;
 
 console.log('🔄 Iniciando servicio de WhatsApp (Versión GitHub)...');
 
@@ -23,13 +28,29 @@ const client = new Client({
     }
 });
 
-client.on('qr', (qr) => {
-    console.log('✨ ¡QR GENERADO! Escanéalo ahora:');
-    qrcode.generate(qr, { small: true });
+client.on('qr', async (qr) => {
+    console.log('✨ ¡QR GENERADO! Esperando escaneo...');
+    qrcodeTerminal.generate(qr, { small: true }); // Lo dejamos en consola por si acaso
+    try {
+        // Convertimos el texto del QR en una imagen Base64 para React
+        qrCodeBase64 = await qrcode.toDataURL(qr); 
+        isConnected = false;
+    } catch (err) {
+        console.error('Error generando imagen QR', err);
+    }
 });
 
 client.on('ready', () => {
     console.log('✅ WhatsApp Conectado exitosamente!');
+    isConnected = true;
+    qrCodeBase64 = null; // Borramos el QR porque ya no se necesita
+});
+
+client.on('disconnected', (reason) => {
+    console.log('❌ WhatsApp Desconectado:', reason);
+    isConnected = false;
+    qrCodeBase64 = null;
+    client.initialize(); // Volver a iniciar para generar un QR nuevo
 });
 
 const enviarMensaje = async (numero, texto) => {
@@ -50,6 +71,22 @@ const enviarMensaje = async (numero, texto) => {
     }
 };
 
+// --- NUEVAS FUNCIONES PARA EL FRONTEND ---
+const getAuthStatus = () => {
+    return {
+        status: isConnected ? 'conectado' : 'desconectado',
+        qr: qrCodeBase64
+    };
+};
+
+const logoutWhatsApp = async () => {
+    if (isConnected) {
+        await client.logout(); // Esto borra la sesión y desvincula el celular
+        isConnected = false;
+        qrCodeBase64 = null;
+    }
+};
+
 client.initialize();
 
-module.exports = { enviarMensaje };
+module.exports = { enviarMensaje, getAuthStatus, logoutWhatsApp };
