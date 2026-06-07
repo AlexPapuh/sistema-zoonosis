@@ -81,7 +81,7 @@ const PerfilPage = () => {
   const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
 
   // --- ESTADOS PARA WHATSAPP (Exclusivos del Admin) ---
-  const [waStatus, setWaStatus] = useState('desconectado'); // 'conectado', 'desconectado', 'cargando'
+  const [waStatus, setWaStatus] = useState('desconectado'); 
   const [qrCode, setQrCode] = useState(null); 
 
   const [form, setForm] = useState({
@@ -130,29 +130,20 @@ const PerfilPage = () => {
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  const token = localStorage.getItem('token'); // Recupera el token guardado
-                  const response = await fetch('/api/whatsapp/status', {
-                      method: 'GET',
-                      headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                      }
-                  });
-                  if (response.ok) {
-                      const data = await response.json();
-                      setWaStatus(data.status);
-                      setQrCode(data.qr);
-                  }
+                  // Usamos authService.api para asegurar que toma la URL base correcta y el token
+                  const res = await authService.api.get('/api/whatsapp/status');
+                  setWaStatus(res.data.status);
+                  setQrCode(res.data.qr);
               } catch (err) {
-                  console.error('Error consultando el bot de WhatsApp:', err);
+                  // Lo mantenemos en silencio para no saturar la consola si el backend está reiniciando
               }
           };
 
-          checkWhatsAppStatus(); // Primera ejecución instantánea
+          checkWhatsAppStatus(); // Primera ejecución
           interval = setInterval(checkWhatsAppStatus, 3000); // Re-consulta cada 3 segundos
       }
 
-      return () => clearInterval(interval); // Limpieza al desmontar el componente
+      return () => clearInterval(interval); 
   }, [rol]);
 
   const handleChange = (e) => {
@@ -213,22 +204,11 @@ const PerfilPage = () => {
           if (result.isConfirmed) {
               try {
                   setWaStatus('cargando');
-                  const token = localStorage.getItem('token');
-                  const response = await fetch('/api/whatsapp/logout', {
-                      method: 'POST',
-                      headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                      }
-                  });
-
-                  if (response.ok) {
-                      setWaStatus('desconectado');
-                      setQrCode(null);
-                      Swal.fire('Sesión Cerrada', 'WhatsApp se ha desvinculado. Espera un momento a que aparezca el nuevo código QR.', 'success');
-                  } else {
-                      throw new Error();
-                  }
+                  // Usamos authService.api para la ruta correcta
+                  await authService.api.post('/api/whatsapp/logout');
+                  setWaStatus('desconectado');
+                  setQrCode(null);
+                  Swal.fire('Sesión Cerrada', 'WhatsApp se ha desvinculado. Espera unos segundos a que el bot genere el nuevo código QR.', 'success');
               } catch (error) {
                   setWaStatus('conectado');
                   Swal.fire('Error', 'No se pudo cerrar la sesión en el servidor.', 'error');
@@ -295,22 +275,26 @@ const PerfilPage = () => {
                         </div>
                     </div>
 
-                    {/* CI y Contraseña */}
+                    {/* CI (Solo Propietarios) y Contraseña */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad (CI)</label>
-                            <div className="relative">
-                                <CreditCard className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                                <input 
-                                    type="text" 
-                                    name="ci" 
-                                    className="pl-10 w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" 
-                                    placeholder="Ej: 1234567"
-                                    value={form.ci} 
-                                    onChange={handleChange} 
-                                />
+                        
+                        {/* El CI ahora está condicionado al rol */}
+                        {rol === 'Propietario' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad (Opcional)</label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                    <input 
+                                        type="text" 
+                                        name="ci" 
+                                        className="pl-10 w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                        placeholder=""
+                                        value={form.ci} 
+                                        onChange={handleChange} 
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Cambiar Contraseña</label>
@@ -454,7 +438,7 @@ const PerfilPage = () => {
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-6">
-                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada las alertas de vacunaciones, recordatorios de citas y reportes de la Unidad de Zoonosis.
+                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada los recordatorios de vacunaciones a los propietarios.
                     </p>
 
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[320px]">
@@ -487,7 +471,7 @@ const PerfilPage = () => {
                                     ) : (
                                         <div className="flex flex-col items-center text-gray-400 p-4">
                                             <QrCode size={44} className="mb-2 opacity-40 animate-pulse" />
-                                            <span className="text-xs font-semibold text-gray-400 text-center">Generando nueva sesión...</span>
+                                            <span className="text-xs font-semibold text-gray-400 text-center">Iniciando motor de WhatsApp<br/>(Puede tomar hasta 30 seg)</span>
                                         </div>
                                     )}
                                 </div>
