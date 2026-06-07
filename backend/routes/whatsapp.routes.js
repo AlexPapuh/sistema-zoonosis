@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const whatsappService = require('../services/whatsappClient');
+const whatsappService = require('../services/whatsappClient'); 
 const { verifyToken } = require('../middleware/auth.middleware'); 
 
-router.get('/status', verifyToken, (req, res) => {
+router.get('/status', (req, res) => {
     const status = whatsappService.getAuthStatus();
     res.json(status);
 });

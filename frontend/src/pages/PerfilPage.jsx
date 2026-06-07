@@ -148,17 +148,9 @@ const PerfilPage = () => {
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  const tokenFinal = getAuthToken();
                   
-                  const response = await fetch('/api/whatsapp/status', {
-                      method: 'GET',
-                      headers: {
-                          'Authorization': `Bearer ${tokenFinal}`,
-                          'x-access-token': tokenFinal,
-                          'Content-Type': 'application/json'
-                      }
-                  });
-
+                  const response = await fetch('/api/whatsapp/status');
+                    
                   if (response.ok) {
                       const data = await response.json();
                       setWaStatus(data.status);
