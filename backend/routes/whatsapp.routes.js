@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const whatsappService = require('../services/whatsapp.service'); 
-
+const whatsappService = require('../services/whatsappClient');
 const { verifyToken } = require('../middleware/auth.middleware'); 
 
 router.get('/status', verifyToken, (req, res) => {

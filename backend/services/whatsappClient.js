@@ -1,8 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
-const qrcode = require('qrcode'); // <--- Nueva librería
+const qrcode = require('qrcode'); 
 
-// Variables de estado en memoria
 let qrCodeBase64 = null;
 let isConnected = false;
 
@@ -30,9 +29,8 @@ const client = new Client({
 
 client.on('qr', async (qr) => {
     console.log('✨ ¡QR GENERADO! Esperando escaneo...');
-    qrcodeTerminal.generate(qr, { small: true }); // Lo dejamos en consola por si acaso
+    qrcodeTerminal.generate(qr, { small: true }); 
     try {
-        // Convertimos el texto del QR en una imagen Base64 para React
         qrCodeBase64 = await qrcode.toDataURL(qr); 
         isConnected = false;
     } catch (err) {
@@ -43,14 +41,14 @@ client.on('qr', async (qr) => {
 client.on('ready', () => {
     console.log('✅ WhatsApp Conectado exitosamente!');
     isConnected = true;
-    qrCodeBase64 = null; // Borramos el QR porque ya no se necesita
+    qrCodeBase64 = null; 
 });
 
 client.on('disconnected', (reason) => {
     console.log('❌ WhatsApp Desconectado:', reason);
     isConnected = false;
     qrCodeBase64 = null;
-    client.initialize(); // Volver a iniciar para generar un QR nuevo
+    client.initialize(); 
 });
 
 const enviarMensaje = async (numero, texto) => {
@@ -71,7 +69,6 @@ const enviarMensaje = async (numero, texto) => {
     }
 };
 
-// --- NUEVAS FUNCIONES PARA EL FRONTEND ---
 const getAuthStatus = () => {
     return {
         status: isConnected ? 'conectado' : 'desconectado',
@@ -81,7 +78,7 @@ const getAuthStatus = () => {
 
 const logoutWhatsApp = async () => {
     if (isConnected) {
-        await client.logout(); // Esto borra la sesión y desvincula el celular
+        await client.logout();
         isConnected = false;
         qrCodeBase64 = null;
     }
