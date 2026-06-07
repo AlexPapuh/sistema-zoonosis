@@ -70,8 +70,10 @@ const enviarMensaje = async (numero, texto) => {
 };
 
 const getAuthStatus = () => {
+    const deVerdadEstaConectado = isConnected || (client.info && client.info.wid);
+
     return {
-        status: isConnected ? 'conectado' : 'desconectado',
+        status: deVerdadEstaConectado ? 'conectado' : 'desconectado',
         qr: qrCodeBase64
     };
 };
