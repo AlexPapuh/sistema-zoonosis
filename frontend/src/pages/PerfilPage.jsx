@@ -80,7 +80,7 @@ const PerfilPage = () => {
   
   const [mapaCentro, setMapaCentro] = useState([-19.5894, -65.7541]); 
 
-  // --- ESTADOS PARA WHATSAPP (Exclusivos del Admin) ---
+  // --- ESTADOS PARA WHATSAPP ---
   const [waStatus, setWaStatus] = useState('desconectado'); 
   const [qrCode, setQrCode] = useState(null); 
 
@@ -123,19 +123,30 @@ const PerfilPage = () => {
     fetchProfile();
   }, []);
 
+  // --- LOOP DE MONITOREO (POLLING) DE WHATSAPP (CON FETCH NATIVO) ---
   useEffect(() => {
       let interval;
       
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  console.log("📡 Consultando estado de WhatsApp...");
-                  const res = await authService.api.get('/whatsapp/status');
-                  console.log("✅ Respuesta del servidor:", res.data);
-                  setWaStatus(res.data.status);
-                  setQrCode(res.data.qr);
+                  const token = localStorage.getItem('token'); // Recuperar token manualmente
+                  
+                  const response = await fetch('/api/whatsapp/status', {
+                      method: 'GET',
+                      headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                      }
+                  });
+
+                  if (response.ok) {
+                      const data = await response.json();
+                      setWaStatus(data.status);
+                      setQrCode(data.qr);
+                  }
               } catch (err) {
-                console.error('❌ Error consultando el bot de WhatsApp:', err);
+                  // Silencio para no llenar la consola si hay un microcorte
               }
           };
 
@@ -204,10 +215,24 @@ const PerfilPage = () => {
           if (result.isConfirmed) {
               try {
                   setWaStatus('cargando');
-                  await authService.api.post('/whatsapp/logout');
-                  setWaStatus('desconectado');
-                  setQrCode(null);
-                  Swal.fire('Sesión Cerrada', 'WhatsApp se ha desvinculado. Espera unos segundos a que el bot genere el nuevo código QR.', 'success');
+                  const token = localStorage.getItem('token');
+                  
+                  // Logout con fetch nativo
+                  const response = await fetch('/api/whatsapp/logout', {
+                      method: 'POST',
+                      headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                      }
+                  });
+
+                  if (response.ok) {
+                      setWaStatus('desconectado');
+                      setQrCode(null);
+                      Swal.fire('Sesión Cerrada', 'WhatsApp se ha desvinculado. Espera unos segundos a que el bot genere el nuevo código QR.', 'success');
+                  } else {
+                      throw new Error('Error de servidor');
+                  }
               } catch (error) {
                   setWaStatus('conectado');
                   Swal.fire('Error', 'No se pudo cerrar la sesión en el servidor.', 'error');
@@ -277,7 +302,6 @@ const PerfilPage = () => {
                     {/* CI (Solo Propietarios) y Contraseña */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
-                        {/* El CI ahora está condicionado al rol */}
                         {rol === 'Propietario' && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad (Opcional)</label>
@@ -287,7 +311,7 @@ const PerfilPage = () => {
                                         type="text" 
                                         name="ci" 
                                         className="pl-10 w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" 
-                                        placeholder=""
+                                        placeholder="Ej: 1234567"
                                         value={form.ci} 
                                         onChange={handleChange} 
                                     />
@@ -437,7 +461,7 @@ const PerfilPage = () => {
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-6">
-                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada los recordatorios de vacunaciones a los propietarios.
+                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada las alertas de vacunaciones, recordatorios de citas y reportes de la Unidad de Zoonosis.
                     </p>
 
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[320px]">
