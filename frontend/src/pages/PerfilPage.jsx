@@ -72,6 +72,24 @@ const LocationPicker = ({ onLocationSelected, position }) => {
     return position ? <Marker position={position} /> : null;
 };
 
+// --- EL CAZADOR DE TOKENS ---
+const getAuthToken = () => {
+    let t = localStorage.getItem('token');
+    
+    // Si no lo encuentra suelto, lo busca adentro de 'user'
+    if (!t) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const userObj = JSON.parse(userStr);
+                t = userObj.token;
+            } catch(e) {}
+        }
+    }
+    // Le quita cualquier comilla extraña que rompa el backend
+    return t ? t.replace(/['"]+/g, '') : '';
+};
+
 const PerfilPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); 
@@ -123,19 +141,20 @@ const PerfilPage = () => {
     fetchProfile();
   }, []);
 
+  // --- LOOP DE MONITOREO (POLLING) DE WHATSAPP ---
   useEffect(() => {
       let interval;
       
       if (rol === 'Admin') {
           const checkWhatsAppStatus = async () => {
               try {
-                  const token = localStorage.getItem('token'); 
+                  const tokenFinal = getAuthToken();
                   
                   const response = await fetch('/api/whatsapp/status', {
                       method: 'GET',
                       headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'x-access-token': token,
+                          'Authorization': `Bearer ${tokenFinal}`,
+                          'x-access-token': tokenFinal,
                           'Content-Type': 'application/json'
                       }
                   });
@@ -146,6 +165,7 @@ const PerfilPage = () => {
                       setQrCode(data.qr);
                   }
               } catch (err) {
+                  // Silencio
               }
           };
 
@@ -214,13 +234,13 @@ const PerfilPage = () => {
           if (result.isConfirmed) {
               try {
                   setWaStatus('cargando');
-                  const token = localStorage.getItem('token');
+                  const tokenFinal = getAuthToken();
                   
                   const response = await fetch('/api/whatsapp/logout', {
                       method: 'POST',
                       headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'x-access-token': token,
+                          'Authorization': `Bearer ${tokenFinal}`,
+                          'x-access-token': tokenFinal,
                           'Content-Type': 'application/json'
                       }
                   });
@@ -267,7 +287,6 @@ const PerfilPage = () => {
                 <div>
                     <h3 className="text-lg font-bold text-gray-700 mb-4 border-b pb-2">Información de la Cuenta</h3>
                     
-                    {/* Nombre y Email */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
@@ -298,7 +317,6 @@ const PerfilPage = () => {
                         </div>
                     </div>
 
-                    {/* CI (Solo Propietarios) y Contraseña */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
                         {rol === 'Propietario' && (
