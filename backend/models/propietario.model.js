@@ -26,7 +26,7 @@ Propietario.createFullProfile = async (userData, ownerData, petsArray) => {
 
     const [ownerRes] = await connection.query(
       `INSERT INTO propietarios (usuario_id, apellido, direccion, telefono, latitud, longitud, creado_en) 
-       VALUES (?, '', ?, ?, ?, ?, NOW())`, // <-- Apellido vacío
+       VALUES (?, '', ?, ?, ?, ?, NOW())`, 
       [
           userId, 
           ownerData.direccion, 
@@ -53,7 +53,7 @@ Propietario.createFullProfile = async (userData, ownerData, petsArray) => {
     await connection.rollback();
     throw error;
   } finally {
-    connection.release();
+    if (connection) connection.release(); // 🛡️ Liberación segura
   }
 };
 

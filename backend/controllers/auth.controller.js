@@ -45,12 +45,14 @@ exports.register = async (req, res) => {
       } catch (err) {
         await connection.rollback();
         console.error("Error al guardar datos extra del propietario:", err);
+        // PARCHE: Lanzamos el error para que el catch principal lo atrape y no responda 201
+        throw err; 
       } finally {
-        connection.release();
+        if (connection) connection.release();
       }
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Usuario registrado exitosamente.',
       user: {
         id: newUser.id,
@@ -62,9 +64,10 @@ exports.register = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
+    return res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
   }
 };
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -101,7 +104,7 @@ exports.login = async (req, res) => {
       { expiresIn: '2h' } 
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Login exitoso.',
       token,
       user: {
@@ -119,7 +122,7 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
+    return res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
   }
 };
 
@@ -140,13 +143,13 @@ exports.getProfile = async (req, res) => {
             if (props.length > 0) datosExtra = props[0];
         } 
         
-        res.json({ ...user, ...datosExtra });
+        return res.json({ ...user, ...datosExtra });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error al obtener perfil" });
+        return res.status(500).json({ message: "Error al obtener perfil" });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 
@@ -188,14 +191,14 @@ exports.updateProfile = async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ message: "Perfil actualizado correctamente" });
+        return res.json({ message: "Perfil actualizado correctamente" });
 
     } catch (error) {
         await connection.rollback();
         console.error(error);
-        res.status(500).json({ message: "Error al actualizar perfil" });
+        return res.status(500).json({ message: "Error al actualizar perfil" });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 
@@ -242,11 +245,11 @@ exports.forgotPassword = async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
-        res.json({ message: "Código enviado a tu correo electrónico." });
+        return res.json({ message: "Código enviado a tu correo electrónico." });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error al enviar el correo." });
+        return res.status(500).json({ message: "Error al enviar el correo." });
     }
 };
 
@@ -270,10 +273,10 @@ exports.resetPassword = async (req, res) => {
             [hashedPassword, users[0].id]
         );
 
-        res.json({ message: "Contraseña actualizada correctamente" });
+        return res.json({ message: "Contraseña actualizada correctamente" });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error al cambiar contraseña" });
+        return res.status(500).json({ message: "Error al cambiar contraseña" });
     }
 };

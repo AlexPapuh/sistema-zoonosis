@@ -6,18 +6,18 @@ exports.createVacunaMaster = async (req, res) => {
     const { nombre, descripcion, especie_objetivo } = req.body;
     if (!nombre || !especie_objetivo) return res.status(400).json({ message: 'Datos incompletos' });
     const newVacuna = await Vacuna.createMaster(nombre, descripcion, especie_objetivo);
-    res.status(201).json({ message: 'Vacuna creada', vacuna: newVacuna });
+    return res.status(201).json({ message: 'Vacuna creada', vacuna: newVacuna });
   } catch (error) {
-    res.status(500).json({ message: 'Error interno' });
+    return res.status(500).json({ message: 'Error interno' });
   }
 };
 
 exports.getAllVacunasMaster = async (req, res) => {
   try {
     const vacunas = await Vacuna.getAllMaster();
-    res.status(200).json(vacunas);
+    return res.status(200).json(vacunas);
   } catch (error) {
-    res.status(500).json({ message: 'Error interno' });
+    return res.status(500).json({ message: 'Error interno' });
   }
 };
 
@@ -76,23 +76,23 @@ exports.applyVacunaToAnimal = async (req, res) => {
     );
 
     await connection.commit();
-    res.status(201).json({ message: 'Vacunación registrada exitosamente', aplicacion: newAplicacion });
+    return res.status(201).json({ message: 'Vacunación registrada exitosamente', aplicacion: newAplicacion });
   
   } catch (error) {
     await connection.rollback();
     console.error('Error en applyVacunaToAnimal:', error);
-    res.status(500).json({ message: 'Error al registrar vacunación', error: error.message });
+    return res.status(500).json({ message: 'Error al registrar vacunación', error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
 exports.getVacunasByAnimalId = async (req, res) => {
   try {
     const vacunas = await Vacuna.getByAnimalId(req.params.animal_id);
-    res.status(200).json(vacunas);
+    return res.status(200).json(vacunas);
   } catch (error) {
-    res.status(500).json({ message: 'Error interno' });
+    return res.status(500).json({ message: 'Error interno' });
   }
 };
 
@@ -100,8 +100,8 @@ exports.deleteAppliedVacuna = async (req, res) => {
     try {
       const success = await Vacuna.deleteApplied(req.params.id);
       if (!success) return res.status(404).json({ message: 'No encontrado' });
-      res.status(200).json({ message: 'Eliminado' });
+      return res.status(200).json({ message: 'Eliminado' });
     } catch (error) {
-      res.status(500).json({ message: 'Error interno' });
+      return res.status(500).json({ message: 'Error interno' });
     }
 };

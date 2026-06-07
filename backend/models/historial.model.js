@@ -5,15 +5,15 @@ class Historial {
 
     static async registrarConsultaCompleta(data) {
         const connection = await db.getConnection();
-        await connection.beginTransaction(); 
         try {
+            await connection.beginTransaction(); // 🛡️ Ahora está dentro del try
 
             let finalPropietarioId = data.propietario_id;
             let credenciales = null;
 
             const latFinal = data.latitudPropietario === '' ? null : data.latitudPropietario;
             const lngFinal = data.longitudPropietario === '' ? null : data.longitudPropietario;
-            const distritoFinal = data.distritoPropietario || null; // <-- CAPTURAMOS EL DISTRITO
+            const distritoFinal = data.distritoPropietario || null;
 
             if (!finalPropietarioId) {
                 const [existingUser] = await connection.query("SELECT id FROM usuarios WHERE email = ?", [data.emailPropietario]);
@@ -86,16 +86,17 @@ class Historial {
         } catch (error) {
             await connection.rollback(); 
             console.error("Error en transacción:", error);
-            throw error;
+            throw error; // En los modelos es correcto hacer throw para que el controlador lo atrape
         } finally {
-            connection.release(); 
+            if (connection) connection.release(); // 🛡️ Liberación segura
         }
     }
 
     static async registrarAtencionCampana(data) {
         const connection = await db.getConnection();
-        await connection.beginTransaction();
         try {
+            await connection.beginTransaction(); // 🛡️ Ahora está dentro del try
+            
             const [vacunaData] = await connection.query("SELECT stock, nombre, unidad FROM inventario WHERE id = ?", [data.vacuna_id]);
             if (vacunaData.length === 0) throw new Error("Vacuna no encontrada en inventario");
             
@@ -142,7 +143,7 @@ class Historial {
             console.error("Error en registrarAtencionCampana:", error);
             throw error;
         } finally {
-            connection.release();
+            if (connection) connection.release(); // 🛡️ Liberación segura
         }
     }
 

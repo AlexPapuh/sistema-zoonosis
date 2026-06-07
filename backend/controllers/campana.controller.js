@@ -58,14 +58,14 @@ exports.createCampana = async (req, res) => {
     }
 
     await connection.commit();
-    res.status(201).json({ message: 'Campaña creada y equipos asignados correctamente', id: campanaId });
+    return res.status(201).json({ message: 'Campaña creada y equipos asignados correctamente', id: campanaId });
 
   } catch (error) {
     await connection.rollback();
     console.error('Error en createCampana:', error);
-    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
@@ -73,10 +73,10 @@ exports.getAllCampanas = async (req, res) => {
   try {
     const usuarioId = req.user.id; 
     const campanas = await Campana.getAll(usuarioId);
-    res.status(200).json(campanas);
+    return res.status(200).json(campanas);
   } catch (error) {
     console.error('Error en getAllCampanas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
@@ -98,10 +98,10 @@ exports.getCampanaById = async (req, res) => {
           return res.status(404).json({ message: 'Campaña no encontrada' });
         }
         
-        res.status(200).json(campana);
+        return res.status(200).json(campana);
       } catch (error) {
         console.error('Error en getCampanaById:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        return res.status(500).json({ message: 'Error interno del servidor' });
       }
 };
 
@@ -109,10 +109,10 @@ exports.getMisCampanasVete = async (req, res) => {
     try {
         const veterinarioId = req.user.id;
         const campanas = await Campana.getByVeterinarioId(veterinarioId);
-        res.status(200).json(campanas);
+        return res.status(200).json(campanas);
     } catch (error) {
         console.error('Error en getMisCampanasVete:', error);
-        res.status(500).json({ message: 'Error al obtener asignaciones' });
+        return res.status(500).json({ message: 'Error al obtener asignaciones' });
     }
 };
 
@@ -181,14 +181,14 @@ exports.updateCampana = async (req, res) => {
     }
 
     await connection.commit();
-    res.status(200).json({ message: 'Campaña actualizada y stock recargado correctamente.' });
+    return res.status(200).json({ message: 'Campaña actualizada y stock recargado correctamente.' });
 
   } catch (error) {
     await connection.rollback();
     console.error('Error en updateCampana:', error);
-    res.status(500).json({ message: 'Error al actualizar', error: error.message });
+    return res.status(500).json({ message: 'Error al actualizar', error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
@@ -196,10 +196,10 @@ exports.deleteCampana = async (req, res) => {
   try {
     const success = await Campana.delete(req.params.id);
     if (!success) return res.status(404).json({ message: 'Campaña no encontrada' });
-    res.status(200).json({ message: 'Campaña eliminada' });
+    return res.status(200).json({ message: 'Campaña eliminada' });
   } catch (error) {
     console.error('Error en deleteCampana:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
@@ -217,12 +217,12 @@ exports.iniciarCampana = async (req, res) => {
 
         await connection.query("UPDATE campanas SET estado = 'Ejecucion' WHERE id = ?", [id]);
         
-        res.status(200).json({ message: '¡Campaña iniciada!' });
+        return res.status(200).json({ message: '¡Campaña iniciada!' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error al iniciar campaña' });
+        return res.status(500).json({ message: 'Error al iniciar campaña' });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 
@@ -250,13 +250,13 @@ exports.finalizarCampana = async (req, res) => {
         await connection.query("UPDATE campana_veterinarios SET stock_actual = 0 WHERE campana_id = ?", [campana_id]);
 
         await connection.commit();
-        res.status(200).json({ message: 'Campaña finalizada.', stock_devuelto: stockDevolver });
+        return res.status(200).json({ message: 'Campaña finalizada.', stock_devuelto: stockDevolver });
     } catch (error) {
         await connection.rollback();
         console.error('Error en finalizarCampana:', error);
-        res.status(500).json({ message: 'Error interno', error: error.message });
+        return res.status(500).json({ message: 'Error interno', error: error.message });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 
@@ -443,7 +443,7 @@ exports.registrarAtencion = async (req, res) => {
 
         await connection.commit();
 
-        res.status(201).json({
+        return res.status(201).json({
             message: 'Atención registrada correctamente.',
             nuevo_stock: nuevoStockVet, 
             credenciales: credenciales,
@@ -453,9 +453,9 @@ exports.registrarAtencion = async (req, res) => {
     } catch (error) {
         await connection.rollback();
         console.error("Error en registrarAtencion:", error);
-        res.status(500).json({ message: error.message || 'Error al registrar atención' });
+        return res.status(500).json({ message: error.message || 'Error al registrar atención' });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };
 
@@ -515,7 +515,7 @@ exports.inscribirACampana = async (req, res) => {
         ? 'Inscripción exitosa y perfil actualizado.' 
         : 'Inscripción exitosa.';
         
-    res.status(201).json({ message: msg });
+    return res.status(201).json({ message: msg });
 
   } catch (error) {
     await connection.rollback();
@@ -523,9 +523,9 @@ exports.inscribirACampana = async (req, res) => {
        return res.status(400).json({ message: 'Ya estás inscrito en esta campaña.' });
     }
     console.error('Error en inscribirACampana:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return res.status(500).json({ message: 'Error interno del servidor' });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
@@ -560,11 +560,11 @@ exports.inscribirPublico = async (req, res) => {
             latitud || null, longitud || null
         ]);
 
-        res.status(201).json({ message: "¡Inscripción exitosa! Te esperamos en la campaña." });
+        return res.status(201).json({ message: "¡Inscripción exitosa! Te esperamos en la campaña." });
 
     } catch (error) {
         console.error("Error en inscripción pública:", error);
-        res.status(500).json({ message: "Error al procesar la inscripción." });
+        return res.status(500).json({ message: "Error al procesar la inscripción." });
     }
 };
 
@@ -598,11 +598,11 @@ exports.getInscripcionesDeCampana = async (req, res) => {
         
         if (rows.length === 0) return res.status(200).json([]);
         
-        res.status(200).json(rows);
+        return res.status(200).json(rows);
 
     } catch (error) {
         console.error('Error en getInscripcionesDeCampana:', error);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        return res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
@@ -612,10 +612,10 @@ exports.marcarAtendido = async (req, res) => {
 
         await db.query("UPDATE campana_inscripciones SET estado = 'Visitado' WHERE id = ?", [id]);
 
-        res.status(200).json({ message: 'Domicilio marcado como visitado.' });
+        return res.status(200).json({ message: 'Domicilio marcado como visitado.' });
     } catch (error) {
         console.error("Error SQL:", error);
-        res.status(500).json({ message: 'Error al actualizar estado en la BD.' });
+        return res.status(500).json({ message: 'Error al actualizar estado en la BD.' });
     }
 };
 
@@ -628,10 +628,10 @@ exports.getCampanasPublicas = async (req, res) => {
             ORDER BY fecha_inicio ASC
         `;
         const [rows] = await db.query(sql);
-        res.json(rows);
+        return res.json(rows);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error al obtener campañas públicas" });
+        return res.status(500).json({ message: "Error al obtener campañas públicas" });
     }
 };
 
@@ -684,12 +684,12 @@ exports.inscribirseCampana = async (req, res) => {
             [campana_id, propietario.id, propietario.direccion || 'Sin dirección', propietario.distrito, detalles]
         );
 
-        res.status(200).json({ message: "Inscripción exitosa." });
+        return res.status(200).json({ message: "Inscripción exitosa." });
 
     } catch (error) {
         console.error("Error en inscribirseCampana:", error);
-        res.status(500).json({ message: "Error al procesar la inscripción." });
+        return res.status(500).json({ message: "Error al procesar la inscripción." });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 };

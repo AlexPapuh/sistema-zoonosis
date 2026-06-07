@@ -26,6 +26,7 @@ const HorarioConfigPage = () => {
     });
     
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false); // NUEVO ESTADO PARA EL BOTÓN
     const [date, setDate] = useState(new Date());
 
     // Definición de días para el selector visual
@@ -73,11 +74,15 @@ const HorarioConfigPage = () => {
 
     const handleUpdateNormal = async (e) => {
         e.preventDefault();
+        if (isSaving) return; // Evita doble clic
+
+        setIsSaving(true); // Activa el estado de guardado
         try { 
             await horarioService.updateHorarioNormal(horarioNormal); 
             Swal.fire('Guardado', 'Configuración de días y horas actualizada.', 'success'); 
         } 
         catch (error) { Swal.fire('Error', 'No se pudo guardar.', 'error'); }
+        finally { setIsSaving(false); } // Desactiva el estado de guardado, falle o no
     };
 
     const handleAddDia = async (e) => {
@@ -229,8 +234,28 @@ const HorarioConfigPage = () => {
                     </div>
                     
                     <div className="mt-6 text-right">
-                        <button type="submit" className="bg-green-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-green-700 shadow-lg hover:shadow-xl transition-all flex items-center ml-auto">
-                            <Save className="w-5 h-5 mr-2"/> Guardar Configuración
+                        <button 
+                            type="submit" 
+                            disabled={isSaving}
+                            className={`font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center ml-auto text-white
+                                ${isSaving 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-green-600 hover:bg-green-700 hover:shadow-xl'
+                                }`}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-5 h-5 mr-2"/> Guardar Configuración
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>
