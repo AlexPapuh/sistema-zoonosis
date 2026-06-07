@@ -79,13 +79,18 @@ const getAuthStatus = () => {
 };
 
 const logoutWhatsApp = async () => {
-    if (isConnected) {
-        await client.logout();
-        isConnected = false;
-        qrCodeBase64 = null;
+    console.log('🚪 Forzando desconexión de WhatsApp a petición del Admin...');
+    try {
+        await client.logout(); 
+    } catch (error) {
+        console.error('⚠️ Error durante el logout, forzando limpieza...', error.message);
     }
+    
+    isConnected = false;
+    qrCodeBase64 = null;
+    
+  
 };
-
 client.initialize();
 
 module.exports = { enviarMensaje, getAuthStatus, logoutWhatsApp };
