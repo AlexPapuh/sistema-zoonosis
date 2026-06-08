@@ -249,6 +249,7 @@ const GestionCampanasPage = () => {
   const currentItems = campanas.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(campanas.length / itemsPerPage);
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const hoyISO = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
       if (!todoElInventario.length) return;
@@ -560,9 +561,25 @@ const handleVerMapa = async (campana) => {
   const handleSubmit = async (e) => {
       e.preventDefault();
       if (!isAdmin) return; 
-      
+      const fechaInicioSelec = new Date(formData.fecha_inicio + 'T00:00:00');
+      const fechaFinSelec = new Date(formData.fecha_fin + 'T00:00:00');
+      const fechaHoyBase = new Date();
+      fechaHoyBase.setHours(0, 0, 0, 0);
       const dataToSubmit = { ...formData };
-      
+      if (!isEditing && fechaInicioSelec < fechaHoyBase) {
+          return Swal.fire({
+              icon: 'warning',
+              title: 'Fecha Inválida',
+              text: 'La campaña no puede iniciar en una fecha pasada.'
+          });
+      }
+      if (fechaFinSelec < fechaInicioSelec) {
+          return Swal.fire({
+              icon: 'warning',
+              title: 'Fechas Inconsistentes',
+              text: 'La fecha de finalización no puede ser anterior a la fecha de inicio.'
+          });
+      }        
       if (!dataToSubmit.distrito) {
           return Swal.fire({ icon: 'warning', title: 'Campo requerido', text: 'Debes seleccionar el distrito de la campaña.' });
       }
@@ -772,11 +789,11 @@ const handleVerMapa = async (campana) => {
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Fecha Inicio</label>
-                        <input type="date" name="fecha_inicio" required disabled={editingStatus === 'Ejecucion'} className="w-full rounded-xl border-gray-300 border p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow disabled:bg-gray-100" value={formData.fecha_inicio} onChange={handleInputChange} />
+                        <input type="date" name="fecha_inicio" required disabled={editingStatus === 'Ejecucion'} min={hoyISO} className="w-full rounded-xl border-gray-300 border p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow disabled:bg-gray-100" value={formData.fecha_inicio} onChange={handleInputChange} />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Fecha Fin</label>
-                        <input type="date" name="fecha_fin" required disabled={editingStatus === 'Ejecucion'} className="w-full rounded-xl border-gray-300 border p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow disabled:bg-gray-100" value={formData.fecha_fin} onChange={handleInputChange} />
+                        <input type="date" name="fecha_fin" required disabled={editingStatus === 'Ejecucion'} min={formData.fecha_inicio || hoyISO} className="w-full rounded-xl border-gray-300 border p-3 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow disabled:bg-gray-100" value={formData.fecha_fin} onChange={handleInputChange} />
                     </div>
                 </div>
 
