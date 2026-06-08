@@ -476,7 +476,7 @@ const PerfilPage = () => {
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-6">
-                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada las alertas de vacunaciones, recordatorios de citas y reportes de la Unidad de Zoonosis.
+                        Gestiona el teléfono oficial de la institución. El número enlazado enviará de manera automatizada las alertas de vacunaciones a los propietarios.
                     </p>
 
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[320px]">

@@ -14,18 +14,13 @@ const login = async (email, password) => {
   });
 
   if (response.data.token) {
-
-    
     const usuarioConToken = {
         ...response.data.user, 
         token: response.data.token 
     };
-
     localStorage.setItem("user", JSON.stringify(usuarioConToken));
-    
     return response.data;
   }
-
   return response.data;
 };
 
@@ -38,6 +33,7 @@ const getCurrentUser = () => {
   if (userStr) return JSON.parse(userStr);
   return null;
 };
+
 const getProfile = async () => {
   const userStr = localStorage.getItem("user");
   let token = null;
@@ -55,6 +51,7 @@ const getProfile = async () => {
   
   return response.data;
 };
+
 const updateProfile = async (userData) => {
   const userStr = localStorage.getItem("user");
   let token = null;
@@ -75,9 +72,12 @@ const updateProfile = async (userData) => {
 
   return response.data;
 };
+
+// 👇 AQUÍ ESTÁ LA CORRECCIÓN 👇
 const forgotPassword = async (email) => {
     try {
-        const response = await axios.post(`${API_URL}/forgot-password`, { email });
+        // Le quitamos la barra antes de forgot-password
+        const response = await axios.post(`${API_URL}forgot-password`, { email });
         return response.data;
     } catch (error) {
         throw error.response?.data?.message || 'Error al solicitar código';
@@ -86,7 +86,8 @@ const forgotPassword = async (email) => {
 
 const resetPassword = async (email, code, newPassword) => {
     try {
-        const response = await axios.post(`${API_URL}/reset-password`, { email, code, newPassword });
+        // Le quitamos la barra antes de reset-password
+        const response = await axios.post(`${API_URL}reset-password`, { email, code, newPassword });
         return response.data;
     } catch (error) {
         throw error.response?.data?.message || 'Error al restablecer contraseña';
@@ -100,7 +101,6 @@ const authService = {
   getCurrentUser,
   getProfile, 
   updateProfile,
-  register,
   forgotPassword,
   resetPassword
 };
